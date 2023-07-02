@@ -1,0 +1,30 @@
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, Timestamp } from 'typeorm';
+import { ChatRoom } from './chatroom.entity';
+import { User } from './user.entity';
+import { ChatRole, ChatUserStatus } from './enums';
+
+@Entity()
+export class ChatUser extends BaseEntity {
+  @PrimaryColumn()
+  roomId: number;
+
+  @PrimaryColumn()
+  userId: number;
+
+  @ManyToOne(() => ChatRoom, (chat: ChatRoom) => chat.id)
+  @JoinColumn({ name: 'roomId' })
+  public readonly chat: ChatRoom;
+
+  @ManyToOne(() => User, (user: User) => user.id)
+  @JoinColumn({ name: 'userId' })
+  public readonly user: User;
+
+  @Column({ type: 'enum', enum: ChatUserStatus })
+  status: ChatUserStatus;
+
+  @Column({ type: 'enum', enum: ChatRole })
+  role: ChatRole;
+
+  @Column()
+  muteTime: Timestamp;
+}
