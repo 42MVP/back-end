@@ -1,5 +1,5 @@
-import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn, Timestamp } from 'typeorm';
-import { ChatRoom } from './chatroom.entity';
+import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { ChatRoom } from './chat-room.entity';
 import { User } from './user.entity';
 import { ChatRole, ChatUserStatus } from './enums';
 
