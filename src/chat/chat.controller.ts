@@ -7,9 +7,14 @@ import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Get(':id')
+  getChatRoomList(@Param('id') id: string) {
+    return this.chatService.getChatRoomList(id);
+  }
+
   @Post()
-  create(@Body() createChatDto: CreateChatRoomDto) {
-    return this.chatService.create(createChatDto);
+  create(@Body() createChatRoomDto: CreateChatRoomDto) {
+    return this.chatService.create(createChatRoomDto);
   }
 
   @Get()
@@ -23,8 +28,8 @@ export class ChatController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateChatDto: UpdateChatRoomDto) {
-    return this.chatService.update(+id, updateChatDto);
+  update(@Param('id') id: string, @Body() updateChatRoomDto: UpdateChatRoomDto) {
+    return this.chatService.update(+id, updateChatRoomDto);
   }
 
   @Delete(':id')
