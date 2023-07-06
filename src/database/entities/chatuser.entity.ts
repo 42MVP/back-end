@@ -25,6 +25,6 @@ export class ChatUser extends BaseEntity {
   @Column({ type: 'enum', enum: ChatRole })
   role: ChatRole;
 
-  @Column({ type: Date })
+  @Column({ type: Date, nullable: true })
   muteTime: Date;
 }

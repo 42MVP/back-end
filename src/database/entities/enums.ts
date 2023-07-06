@@ -11,6 +11,7 @@ export enum ChatRoomMode {
 }
 
 export enum ChatUserStatus {
+  NONE = 'NONE',
   KICK = 'KICK',
   BAN = 'BAN',
   MUTE = 'MUTE',
