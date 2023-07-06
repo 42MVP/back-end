@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ChatRoom } from 'src/database/entities/chatroom.entity';
 import { Repository } from 'typeorm';
-import { User } from 'src/database/entities/user.entity';
-import { ChatUser } from 'src/database/entities/chatuser.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ChatRoom } from '../database/entities/chatroom.entity';
+import { ChatUser } from '../database/entities/chatuser.entity';
+import { User } from '../database/entities/user.entity';
+import { ChatUserStatus } from '../database/entities/enums';
+import { ChatRoomData } from '../chat/chat-res.interface';
 
 @Injectable()
 export class ChatService {
@@ -18,21 +20,38 @@ export class ChatService {
     private userRepository: Repository<User>,
   ) {}
 
-  async getChatRoomList(userName: string) {
+  async getChatRoomData(targetRoom: ChatRoom): Promise<ChatRoomData> {
+    const chatRoomData = {} as ChatRoomData;
+    chatRoomData.isChannel = targetRoom.roomMode != 'DIRECT' ? true : false;
+    chatRoomData.name = targetRoom.roomName;
+    chatRoomData.haspassword = targetRoom.password == '' ? false : true;
+    chatRoomData.users = await this.chatUserRepository.find({
+      where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
+    });
+    chatRoomData.banUsers = await this.chatUserRepository.find({
+      where: { roomId: targetRoom.id, status: ChatUserStatus.BAN },
+    });
+    chatRoomData.abong = await this.chatUserRepository.find({
+      where: { roomId: targetRoom.id, status: ChatUserStatus.MUTE },
+    });
+    return chatRoomData;
+  }
+
+  async getChatRoomList(userName: string): Promise<ChatRoomData[]> {
     if (userName == '') {
       throw new Error('Need a username for fetching chatlist');
     }
-    console.log(userName);
     const targetUser = this.userRepository.findOne({ where: { userName: userName } });
     const chatUsers = this.chatUserRepository.find({ where: { userId: (await targetUser).id } });
-    const chatRooms: ChatRoom[] = [];
     let element: ChatUser;
+    let singleRoom: ChatRoom;
+    const chatRoomList: ChatRoomData[] = [];
     for (let index = 0; index < (await chatUsers).length; index++) {
-      console.log(`${index}, ${(await chatUsers).length}`);
       element = (await chatUsers).at(index);
-      chatRooms.push(await this.chatRoomRepository.findOne({ where: { id: element.roomId } }));
+      singleRoom = await this.chatRoomRepository.findOne({ where: { id: element.roomId } });
+      chatRoomList.push(await this.getChatRoomData(singleRoom));
     }
-    return chatRooms;
+    return chatRoomList;
   }
 
   async create(createChatRoomDto: CreateChatRoomDto) {

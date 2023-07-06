@@ -2,9 +2,9 @@ import { Module } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ChatRoom } from 'src/database/entities/chatroom.entity';
-import { User } from 'src/database/entities/user.entity';
-import { ChatUser } from 'src/database/entities/chatuser.entity';
+import { ChatRoom } from '../database/entities/chatroom.entity';
+import { User } from '../database/entities/user.entity';
+import { ChatUser } from '../database/entities/chatuser.entity';
 
 @Module({
   imports: [

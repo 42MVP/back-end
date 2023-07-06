@@ -1,5 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
-import { ChatRoomMode } from 'src/database/entities/enums';
+import { ChatRoomMode } from '../../database/entities/enums';
 
 export class CreateChatRoomDto {
   roomName: string;
