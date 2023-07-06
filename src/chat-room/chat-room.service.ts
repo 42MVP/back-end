@@ -1,15 +1,26 @@
 import { Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ChatRoom } from 'src/database/entities/chat-room.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ChatRoomService {
-  create(createChatRoomDto: CreateChatRoomDto) {
-    return 'This action adds a new chatRoom';
+  constructor(
+    @InjectRepository(ChatRoom)
+    private chatRepository: Repository<ChatRoom>,
+  ) {}
+
+  async create(createChatRoomDto: CreateChatRoomDto) {
+    if (createChatRoomDto.roomMode == 'PROTECTED' && createChatRoomDto.password == '') {
+      throw new Error('Need a Password for the protected room');
+    }
+    return await this.chatRepository.save(createChatRoomDto);
   }
 
-  findAll() {
-    return `This action returns all chatRoom`;
+  async findAll() {
+    return await this.chatRepository.find();
   }
 
   findOne(id: number) {
