@@ -8,6 +8,7 @@ export enum ChatRoomMode {
   PUBLIC = 'PUBLIC',
   PROTECTED = 'PROTECTED',
   PRIVATE = 'PRIVATE',
+  DIRECT = 'DIRECT',
 }
 
 export enum ChatUserStatus {
