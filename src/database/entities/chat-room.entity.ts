@@ -6,6 +6,9 @@ export class ChatRoom extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({ type: 'varchar', nullable: true })
+  roomName: string;
+
   @Column({ type: 'enum', enum: ChatRoomMode })
   roomMode: ChatRoomMode;
 
