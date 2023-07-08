@@ -1,6 +1,8 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { LoginService } from './login.service';
 import { FtAuthGuard } from 'src/auth/ft/ft-auth.guard';
+import { ExtractUser } from 'src/auth/extract-user.decorator';
+import { User } from 'src/database/entities/user.entity';
 
 @Controller('login')
 export class LoginController {
@@ -14,7 +16,7 @@ export class LoginController {
 
   @Get('redirect')
   @UseGuards(FtAuthGuard)
-  loginRedirect() {
-    return;
+  async loginRedirect(@ExtractUser() user: User) {
+    console.log(user);
   }
 }

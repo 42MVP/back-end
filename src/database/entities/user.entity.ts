@@ -1,6 +1,5 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from './enums';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
 @Entity()
 export class User extends BaseEntity {
@@ -10,11 +9,8 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 20, nullable: false })
   intraId: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'varchar', nullable: true })
   userName: string;
-
-  @Column({ type: 'varchar', nullable: false })
-  password: string;
 
   @Column({ type: 'boolean', default: false })
   isAuth: boolean;
@@ -27,14 +23,22 @@ export class User extends BaseEntity {
 
   status: UserStatus;
 
-  static from(createUserDto: CreateUserDto): User {
+  // static from(createUserDto: CreateUserDto): User {
+  //   const user = new User();
+  //   user.intraId = createUserDto.intraId;
+  //   user.userName = createUserDto.userName;
+  //   user.password = createUserDto.password;
+  //   user.isAuth = createUserDto.isAuth;
+  //   user.avatar = createUserDto.avatar;
+  //   user.email = createUserDto.email;
+  //   return user;
+  // }
+
+  static from(requestUser): User {
     const user = new User();
-    user.intraId = createUserDto.intraId;
-    user.userName = createUserDto.userName;
-    user.password = createUserDto.password;
-    user.isAuth = createUserDto.isAuth;
-    user.avatar = createUserDto.avatar;
-    user.email = createUserDto.email;
+    user.intraId = requestUser.username;
+    user.isAuth = false;
+    user.email = requestUser.emails[0].value;
     return user;
   }
 }

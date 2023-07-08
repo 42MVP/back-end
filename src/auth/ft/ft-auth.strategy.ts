@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-oauth2';
+import { Strategy } from 'passport-42';
 import { ConfigService } from '@nestjs/config';
+import { FtProfile } from '../types';
 
 @Injectable()
 export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {
-  constructor(configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     super({
       authorizationURL: `https://api.intra.42.fr/oauth/authorize?client_id=${configService.get<string>(
         '42API_CLIENT_ID',
@@ -18,13 +19,10 @@ export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {
     });
   }
 
-  async validate(accessToken: string, refreshToken: string) {
-    try {
-      console.log('accessToken: ', accessToken);
-      console.log('refreshToken: ', refreshToken);
-      return accessToken;
-    } catch (error) {
-      console.log(error);
+  async validate(accessToken: string, refreshToken: string, profile: FtProfile): Promise<FtProfile> {
+    if (accessToken === undefined || refreshToken === undefined || profile.username === undefined) {
+      throw new UnauthorizedException();
     }
+    return profile;
   }
 }

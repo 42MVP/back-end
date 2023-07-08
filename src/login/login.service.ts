@@ -1,26 +1,26 @@
 import { Injectable } from '@nestjs/common';
-import { CreateLoginDto } from './dto/create-login.dto';
-import { UpdateLoginDto } from './dto/update-login.dto';
-
+import { User } from 'src/database/entities/user.entity';
+import { UserService } from 'src/user/user.service';
 @Injectable()
 export class LoginService {
-  create(createLoginDto: CreateLoginDto) {
-    return 'This action adds a new login';
+  constructor(private readonly userService: UserService) {}
+
+  async isRegister(intraId: string): Promise<boolean> {
+    const user: User = await this.userService.findOneByIntraId(intraId);
+    if (!user || user.userName === undefined) {
+      return false;
+    }
+    return true;
   }
 
-  findAll() {
-    return `This action returns all login`;
-  }
+  async register(user: User): Promise<boolean> {
+    console.log(user.intraId);
+    let find: User = await this.userService.findOneByIntraId(user.intraId);
+    if (find) {
+      return true;
+    }
+    find = new User();
 
-  findOne(id: number) {
-    return `This action returns a #${id} login`;
-  }
-
-  update(id: number, updateLoginDto: UpdateLoginDto) {
-    return `This action updates a #${id} login`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} login`;
+    return false;
   }
 }
