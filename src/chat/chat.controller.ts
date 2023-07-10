@@ -35,9 +35,13 @@ export class ChatController {
     return this.chatService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateChatRoomDto: UpdateChatRoomDto) {
-    return this.chatService.update(+id, updateChatRoomDto);
+  @Patch('set-admin')
+  setChatAdmin(
+    @Query('userid') userId: number,
+    @Query('roomid') roomId: number,
+    @Body() updateChatRoomDto: UpdateChatRoomDto,
+  ) {
+    return this.chatService.setChatAdmin(userId, roomId, updateChatRoomDto);
   }
 
   @Delete('exit-room')

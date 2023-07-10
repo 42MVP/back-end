@@ -79,8 +79,16 @@ export class ChatService {
     return `This action returns a #${id} chat`;
   }
 
-  update(id: number, updateChatRoomDto: UpdateChatRoomDto) {
-    return `This action updates a #${id} chat`;
+  async setChatAdmin(userId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
+    const newAdmin = await this.chatUserRepository.findOne({ where: { userId: userId, roomId: roomId } });
+    if (!newAdmin) {
+      throw new Error('No Such User');
+    }
+    if (newAdmin.status == ChatUserStatus.BAN || newAdmin.status == ChatUserStatus.KICK) {
+      throw new Error('Invalid User');
+    }
+    Object.assign(newAdmin, updateChatRoomDto);
+    return await this.chatUserRepository.save(newAdmin);
   }
 
   remove(id: number) {
