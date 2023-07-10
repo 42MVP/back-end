@@ -40,8 +40,8 @@ export class ChatController {
     return this.chatService.update(+id, updateChatRoomDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.chatService.remove(+id);
+  @Delete('exit-room')
+  exitChatRoom(@Query('userid') userId: number, @Query('roomid') roomId: number) {
+    return this.chatService.exitChatRoom(userId, roomId);
   }
 }

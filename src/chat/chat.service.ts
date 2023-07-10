@@ -86,4 +86,16 @@ export class ChatService {
   remove(id: number) {
     return `This action removes a #${id} chat`;
   }
+
+  async exitChatRoom(userId: number, roomId: number) {
+    const exitUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: userId } });
+    if (exitUser.role != ChatRole.OWNER) {
+      return await this.chatUserRepository.remove(exitUser);
+    } else {
+      const exitRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+      const chatUsers = await this.chatUserRepository.find({ where: { roomId: roomId } });
+      await this.chatUserRepository.remove(chatUsers);
+      return await this.chatRoomRepository.remove(exitRoom);
+    }
+  }
 }
