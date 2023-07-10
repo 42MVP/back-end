@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
-import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../database/entities/chatroom.entity';
@@ -9,6 +8,7 @@ import { User } from '../database/entities/user.entity';
 import { ChatRole, ChatUserStatus } from '../database/entities/enums';
 import { ChatRoomData } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
+import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 
 @Injectable()
 export class ChatService {
@@ -79,7 +79,7 @@ export class ChatService {
     return `This action returns a #${id} chat`;
   }
 
-  async setChatAdmin(userId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
+  async changeChatUserRole(userId: number, roomId: number, updateChatUserDto: UpdateChatUserDto) {
     const newAdmin = await this.chatUserRepository.findOne({ where: { userId: userId, roomId: roomId } });
     if (!newAdmin) {
       throw new Error('No Such User');
@@ -87,12 +87,11 @@ export class ChatService {
     if (newAdmin.status == ChatUserStatus.BAN || newAdmin.status == ChatUserStatus.KICK) {
       throw new Error('Invalid User');
     }
-    Object.assign(newAdmin, updateChatRoomDto);
+    if (updateChatUserDto.role == ChatRole.OWNER) {
+      throw new Error('Invalid Role');
+    }
+    Object.assign(newAdmin, updateChatUserDto);
     return await this.chatUserRepository.save(newAdmin);
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} chat`;
   }
 
   async exitChatRoom(userId: number, roomId: number) {

@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
-import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
+import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -35,13 +35,13 @@ export class ChatController {
     return this.chatService.findOne(+id);
   }
 
-  @Patch('set-admin')
+  @Patch('change-role')
   setChatAdmin(
     @Query('userid') userId: number,
     @Query('roomid') roomId: number,
-    @Body() updateChatRoomDto: UpdateChatRoomDto,
+    @Body() updateChatUserDto: UpdateChatUserDto,
   ) {
-    return this.chatService.setChatAdmin(userId, roomId, updateChatRoomDto);
+    return this.chatService.changeChatUserRole(userId, roomId, updateChatUserDto);
   }
 
   @Delete('exit-room')
