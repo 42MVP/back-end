@@ -6,8 +6,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../database/entities/chatroom.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
-import { ChatUserStatus } from '../database/entities/enums';
+import { ChatRole, ChatUserStatus } from '../database/entities/enums';
 import { ChatRoomData } from '../chat/chat-res.interface';
+import { CreateChatUserDto } from './dto/create-chat-user.dto';
 
 @Injectable()
 export class ChatService {
@@ -54,8 +55,20 @@ export class ChatService {
     return chatRoomList;
   }
 
-  async create(createChatRoomDto: CreateChatRoomDto) {
-    return await this.chatRoomRepository.save(createChatRoomDto);
+  async enterChatRoom(createChatUserDto: CreateChatUserDto) {
+    return await this.chatUserRepository.save(createChatUserDto);
+  }
+
+  async createChatRoom(userId: number, createChatRoomDto: CreateChatRoomDto) {
+    const newRoom = await this.chatRoomRepository.save(createChatRoomDto);
+    console.log(newRoom);
+    const newChatUser: CreateChatUserDto = {} as CreateChatUserDto;
+    newChatUser.roomId = newRoom.id;
+    newChatUser.userId = userId;
+    newChatUser.status = ChatUserStatus.NONE;
+    newChatUser.role = ChatRole.OWNER;
+    newChatUser.muteTime = null;
+    return await this.enterChatRoom(newChatUser);
   }
 
   findAll() {

@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
+import { CreateChatUserDto } from './dto/create-chat-user.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -12,9 +13,16 @@ export class ChatController {
     return this.chatService.getChatRoomList(id);
   }
 
-  @Post()
-  create(@Body() createChatRoomDto: CreateChatRoomDto) {
-    return this.chatService.create(createChatRoomDto);
+  // doxygen 작성!! 제발!@
+  @Post('enter')
+  enterChatRoom(@Body() createChatUserDto: CreateChatUserDto) {
+    // 있는 채팅방 들어감
+    return this.chatService.enterChatRoom(createChatUserDto);
+  }
+
+  @Post('create-room')
+  createChatRoom(@Query('userid') userId: number, @Body() createChatRoomDto: CreateChatRoomDto) {
+    return this.chatService.createChatRoom(userId, createChatRoomDto);
   }
 
   @Get()
