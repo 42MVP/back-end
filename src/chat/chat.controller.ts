@@ -8,6 +8,11 @@ import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
+  @Get('search')
+  findAllChannel() {
+    return this.chatService.findAllChannel();
+  }
+
   @Get(':id')
   getChatRoomList(@Param('id') id: string) {
     return this.chatService.getChatRoomList(id);
@@ -30,15 +35,10 @@ export class ChatController {
     return this.chatService.enterChatRoom(createChatUserDto);
   }
 
-  @Get()
-  findAll() {
-    return this.chatService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.chatService.findOne(+id);
-  }
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.chatService.findOne(+id);
+  // }
 
   @Patch('change-role')
   changeChatUserRole(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {

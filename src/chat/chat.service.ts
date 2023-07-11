@@ -71,12 +71,8 @@ export class ChatService {
     return await this.enterChatRoom(newChatUser);
   }
 
-  findAll() {
-    return `This action returns all chat`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} chat`;
+  async findAllChannel() {
+    return await this.chatRoomRepository.find();
   }
 
   checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {
