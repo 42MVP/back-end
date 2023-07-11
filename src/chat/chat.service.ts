@@ -79,25 +79,44 @@ export class ChatService {
     return `This action returns a #${id} chat`;
   }
 
-  async changeChatUserRole(userId: number, roomId: number, updateChatUserDto: UpdateChatUserDto) {
-    const newAdmin = await this.chatUserRepository.findOne({ where: { userId: userId, roomId: roomId } });
-    if (!newAdmin) {
+  checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {
+    if (!execUser || !targetUser) {
       throw new Error('No Such User');
     }
-    if (newAdmin.status == ChatUserStatus.BAN || newAdmin.status == ChatUserStatus.KICK) {
-      throw new Error('Invalid User');
+    if (execUser.role == ChatRole.USER) {
+      throw new Error('Permission Denied');
     }
-    if (updateChatUserDto.role == ChatRole.OWNER) {
-      throw new Error('Invalid Role');
+    if (targetUser.role == ChatRole.OWNER) {
+      throw new Error('Invalid Role to Change');
     }
-    Object.assign(newAdmin, updateChatUserDto);
-    return await this.chatUserRepository.save(newAdmin);
+    return;
   }
 
-  async changeChatUserStatus(userId: number, roomId: number, updateChatUserDto: UpdateChatUserDto) {
-    const targetUser = await this.chatUserRepository.findOne({ where: { userId: userId, roomId: roomId } });
-    if (!targetUser) {
-      throw new Error('No Such User');
+  async changeChatUserRole(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
+    const execUser = await this.chatUserRepository.findOne({
+      where: { roomId: updateChatUserDto.roomId, userId: execUserId },
+    });
+    const targetUser = await this.chatUserRepository.findOne({
+      where: { roomId: updateChatUserDto.roomId, userId: updateChatUserDto.userId },
+    });
+    this.checkUserAutority(execUser, targetUser);
+    Object.assign(targetUser, updateChatUserDto);
+    return await this.chatUserRepository.save(targetUser);
+  }
+
+  async changeChatUserStatus(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
+    const execUser = await this.chatUserRepository.findOne({
+      where: { roomId: updateChatUserDto.roomId, userId: execUserId },
+    });
+    const targetUser = await this.chatUserRepository.findOne({
+      where: { roomId: updateChatUserDto.roomId, userId: updateChatUserDto.userId },
+    });
+    this.checkUserAutority(execUser, targetUser);
+    if (updateChatUserDto.status == ChatUserStatus.MUTE && !updateChatUserDto.muteTime) {
+      throw new Error('Need limited mute time');
+    }
+    if (updateChatUserDto.status != ChatUserStatus.MUTE && targetUser.muteTime) {
+      updateChatUserDto.muteTime = null;
     }
     Object.assign(targetUser, updateChatUserDto);
     return await this.chatUserRepository.save(targetUser);

@@ -14,7 +14,7 @@ export class ChatController {
   }
 
   // doxygen 작성!! 제발!@
-  @Post('enter')
+  @Post('enter-room')
   enterChatRoom(@Body() createChatUserDto: CreateChatUserDto) {
     // 있는 채팅방 들어감
     return this.chatService.enterChatRoom(createChatUserDto);
@@ -36,21 +36,13 @@ export class ChatController {
   }
 
   @Patch('change-role')
-  changeChatUserRole(
-    @Query('userid') userId: number,
-    @Query('roomid') roomId: number,
-    @Body() updateChatUserDto: UpdateChatUserDto,
-  ) {
-    return this.chatService.changeChatUserRole(userId, roomId, updateChatUserDto);
+  changeChatUserRole(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {
+    return this.chatService.changeChatUserRole(execUserId, updateChatUserDto);
   }
 
   @Patch('change-status')
-  changeChatUserStatus(
-    @Query('userid') userId: number,
-    @Query('roomid') roomId: number,
-    @Body() updateChatUserDto: UpdateChatUserDto,
-  ) {
-    return this.chatService.changeChatUserStatus(userId, roomId, updateChatUserDto);
+  changeChatUserStatus(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {
+    return this.chatService.changeChatUserStatus(execUserId, updateChatUserDto);
   }
 
   @Delete('exit-room')
