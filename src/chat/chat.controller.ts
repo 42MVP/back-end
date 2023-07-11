@@ -25,6 +25,11 @@ export class ChatController {
     return this.chatService.createChatRoom(userId, createChatRoomDto);
   }
 
+  @Post('invite')
+  inviteChatUser(@Body() createChatUserDto: CreateChatUserDto) {
+    return this.chatService.enterChatRoom(createChatUserDto);
+  }
+
   @Get()
   findAll() {
     return this.chatService.findAll();
