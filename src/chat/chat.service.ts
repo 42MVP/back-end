@@ -94,6 +94,15 @@ export class ChatService {
     return await this.chatUserRepository.save(newAdmin);
   }
 
+  async changeChatUserStatus(userId: number, roomId: number, updateChatUserDto: UpdateChatUserDto) {
+    const targetUser = await this.chatUserRepository.findOne({ where: { userId: userId, roomId: roomId } });
+    if (!targetUser) {
+      throw new Error('No Such User');
+    }
+    Object.assign(targetUser, updateChatUserDto);
+    return await this.chatUserRepository.save(targetUser);
+  }
+
   async exitChatRoom(userId: number, roomId: number) {
     const exitUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: userId } });
     if (exitUser.role != ChatRole.OWNER) {

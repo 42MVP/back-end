@@ -36,12 +36,21 @@ export class ChatController {
   }
 
   @Patch('change-role')
-  setChatAdmin(
+  changeChatUserRole(
     @Query('userid') userId: number,
     @Query('roomid') roomId: number,
     @Body() updateChatUserDto: UpdateChatUserDto,
   ) {
     return this.chatService.changeChatUserRole(userId, roomId, updateChatUserDto);
+  }
+
+  @Patch('change-status')
+  changeChatUserStatus(
+    @Query('userid') userId: number,
+    @Query('roomid') roomId: number,
+    @Body() updateChatUserDto: UpdateChatUserDto,
+  ) {
+    return this.chatService.changeChatUserStatus(userId, roomId, updateChatUserDto);
   }
 
   @Delete('exit-room')
