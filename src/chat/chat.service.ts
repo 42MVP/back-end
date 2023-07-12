@@ -1,4 +1,4 @@
-import { Injectable, Query } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -60,15 +60,32 @@ export class ChatService {
     return await this.chatUserRepository.save(createChatUserDto);
   }
 
-  async createChatRoom(userId: number, createChatRoomDto: CreateChatRoomDto) {
+  createInitialChatUser(roomId: number, userId: number): CreateChatUserDto {
+    const newInitialChatUser: CreateChatUserDto = {} as CreateChatUserDto;
+    newInitialChatUser.roomId = roomId;
+    newInitialChatUser.userId = userId;
+    newInitialChatUser.status = ChatUserStatus.NONE;
+    newInitialChatUser.role = ChatRole.OWNER;
+    newInitialChatUser.muteTime = null;
+    return newInitialChatUser;
+  }
+
+  async createChatRoom(userId: number, dmId: number, createChatRoomDto: CreateChatRoomDto) {
+    if (createChatRoomDto.roomMode == ChatRoomMode.DIRECT) {
+      if (!dmId) {
+        throw new BadRequestException('DM need a target user');
+      }
+      createChatRoomDto.roomName = null;
+      createChatRoomDto.password = null;
+    } else if (createChatRoomDto.roomMode == ChatRoomMode.PROTECTED && !createChatRoomDto.password) {
+      throw new BadRequestException('Protected room need a password');
+    }
     const newRoom = await this.chatRoomRepository.save(createChatRoomDto);
-    console.log(newRoom);
-    const newChatUser: CreateChatUserDto = {} as CreateChatUserDto;
-    newChatUser.roomId = newRoom.id;
-    newChatUser.userId = userId;
-    newChatUser.status = ChatUserStatus.NONE;
-    newChatUser.role = ChatRole.OWNER;
-    newChatUser.muteTime = null;
+    if (newRoom.roomMode == ChatRoomMode.DIRECT) {
+      const newDmUser = this.createInitialChatUser(newRoom.id, dmId);
+      await this.enterChatRoom(newDmUser);
+    }
+    const newChatUser = this.createInitialChatUser(newRoom.id, userId);
     return await this.enterChatRoom(newChatUser);
   }
 
@@ -76,7 +93,15 @@ export class ChatService {
     return await this.chatRoomRepository.find();
   }
 
+  async isChannelDm(roomId: number) {
+    const targetChannel = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+    return targetChannel.roomMode == ChatRoomMode.DIRECT ? true : false;
+  }
+
   async changeChatRoomInfo(execId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
+    if (this.isChannelDm(roomId)) {
+      throw new BadRequestException('Can not change DM channel info');
+    }
     const execUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: execId } });
     if (!execUser) {
       throw new Error('No Such UserId or RoomId');
@@ -109,6 +134,9 @@ export class ChatService {
   }
 
   async changeChatUserRole(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
+    if (this.isChannelDm(updateChatUserDto.roomId)) {
+      throw new BadRequestException('Can not change DM channel info');
+    }
     const execUser = await this.chatUserRepository.findOne({
       where: { roomId: updateChatUserDto.roomId, userId: execUserId },
     });
@@ -121,6 +149,9 @@ export class ChatService {
   }
 
   async changeChatUserStatus(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
+    if (this.isChannelDm(updateChatUserDto.roomId)) {
+      throw new BadRequestException('Can not change DM channel info');
+    }
     const execUser = await this.chatUserRepository.findOne({
       where: { roomId: updateChatUserDto.roomId, userId: execUserId },
     });

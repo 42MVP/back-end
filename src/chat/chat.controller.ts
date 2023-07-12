@@ -27,8 +27,12 @@ export class ChatController {
   }
 
   @Post('create-room')
-  createChatRoom(@Query('userid') userId: number, @Body() createChatRoomDto: CreateChatRoomDto) {
-    return this.chatService.createChatRoom(userId, createChatRoomDto);
+  createChatRoom(
+    @Query('userid') userId: number,
+    @Query('dmid') dmId: number,
+    @Body() createChatRoomDto: CreateChatRoomDto,
+  ) {
+    return this.chatService.createChatRoom(userId, dmId, createChatRoomDto);
   }
 
   @Post('invite')
