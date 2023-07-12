@@ -5,22 +5,24 @@ import { UserService } from 'src/user/user.service';
 export class LoginService {
   constructor(private readonly userService: UserService) {}
 
-  async isRegister(intraId: string): Promise<boolean> {
-    const user: User = await this.userService.findOneByIntraId(intraId);
-    if (!user || user.userName === undefined) {
-      return false;
+  async getRedirectUrl(user: User): Promise<string> {
+    const foundUser = await this.userService.findOneByIntraId(user.intraId);
+    if (await this.isRegister(foundUser)) {
+      if (foundUser.isAuth) {
+        return '/2fa';
+      }
+      return '/';
     }
+    await this.register(user);
+    return '/register';
+  }
+
+  async isRegister(user: User): Promise<boolean> {
+    if (!user || user.userName === undefined) return false;
     return true;
   }
 
-  async register(user: User): Promise<boolean> {
-    console.log(user.intraId);
-    let find: User = await this.userService.findOneByIntraId(user.intraId);
-    if (find) {
-      return true;
-    }
-    find = new User();
-
-    return false;
+  async register(user: User): Promise<void> {
+    this.userService.create(user);
   }
 }
