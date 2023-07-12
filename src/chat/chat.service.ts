@@ -99,7 +99,7 @@ export class ChatService {
   }
 
   async changeChatRoomInfo(execId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
-    if (this.isChannelDm(roomId)) {
+    if (await this.isChannelDm(roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: execId } });
@@ -110,6 +110,7 @@ export class ChatService {
       throw new Error('Permission Denied');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+    updateChatRoomDto.roomName = targetRoom.roomName;
     if (updateChatRoomDto.roomMode == ChatRoomMode.PROTECTED && updateChatRoomDto.password == null) {
       throw new Error('Need a password for protected room');
     }
