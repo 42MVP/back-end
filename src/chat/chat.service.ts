@@ -55,6 +55,12 @@ export class ChatService {
   }
 
   async enterChatRoom(createChatUserDto: CreateChatUserDto) {
+    const existUser = await this.chatUserRepository.findOne({
+      where: { roomId: createChatUserDto.roomId, userId: createChatUserDto.userId },
+    });
+    if (existUser && existUser.status == ChatUserStatus.BAN) {
+      throw new BadRequestException('The user has been banned');
+    }
     return await this.chatUserRepository.save(createChatUserDto);
   }
 
@@ -143,7 +149,7 @@ export class ChatService {
   }
 
   async changeChatUserRole(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
-    if (this.isChannelDm(updateChatUserDto.roomId)) {
+    if (await this.isChannelDm(updateChatUserDto.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
@@ -158,7 +164,7 @@ export class ChatService {
   }
 
   async changeChatUserStatus(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
-    if (this.isChannelDm(updateChatUserDto.roomId)) {
+    if (await this.isChannelDm(updateChatUserDto.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
