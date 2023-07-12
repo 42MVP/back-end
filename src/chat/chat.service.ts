@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -40,17 +40,15 @@ export class ChatService {
   }
 
   async getChatRoomList(userName: string): Promise<ChatRoomData[]> {
-    if (userName == '') {
-      throw new Error('Need a username for fetching chatlist');
+    const targetUser = await this.userRepository.findOne({ where: { userName: userName } });
+    if (!targetUser) {
+      throw new BadRequestException('Can not find target user');
     }
-    const targetUser = this.userRepository.findOne({ where: { userName: userName } });
-    const chatUsers = this.chatUserRepository.find({ where: { userId: (await targetUser).id } });
-    let element: ChatUser;
-    let singleRoom: ChatRoom;
+    const chatUsers = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
     const chatRoomList: ChatRoomData[] = [];
-    for (let index = 0; index < (await chatUsers).length; index++) {
-      element = (await chatUsers).at(index);
-      singleRoom = await this.chatRoomRepository.findOne({ where: { id: element.roomId } });
+    for (let index = 0; index < chatUsers.length; index++) {
+      const element = chatUsers[index];
+      const singleRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: element.roomId } });
       chatRoomList.push(await this.getChatRoomData(singleRoom));
     }
     return chatRoomList;
@@ -114,15 +112,15 @@ export class ChatService {
     }
     const execUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: execId } });
     if (!execUser) {
-      throw new Error('No Such UserId or RoomId');
+      throw new NotFoundException('No Such UserId or RoomId');
     }
     if (execUser.role != ChatRole.OWNER) {
-      throw new Error('Permission Denied');
+      throw new BadRequestException('Permission Denied');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
     updateChatRoomDto.roomName = targetRoom.roomName;
     if (updateChatRoomDto.roomMode == ChatRoomMode.PROTECTED && updateChatRoomDto.password == null) {
-      throw new Error('Need a password for protected room');
+      throw new BadRequestException('Need a password for protected room');
     }
     if (updateChatRoomDto.roomMode != ChatRoomMode.PROTECTED) {
       updateChatRoomDto.password = null;
@@ -133,13 +131,13 @@ export class ChatService {
 
   checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {
     if (!execUser || !targetUser) {
-      throw new Error('No Such User');
+      throw new NotFoundException('No Such User');
     }
     if (execUser.role == ChatRole.USER) {
-      throw new Error('Permission Denied');
+      throw new BadRequestException('Permission Denied');
     }
     if (targetUser.role == ChatRole.OWNER) {
-      throw new Error('Invalid Role to Change');
+      throw new BadRequestException('Invalid Role to Change');
     }
     return;
   }
@@ -171,7 +169,7 @@ export class ChatService {
     });
     this.checkUserAutority(execUser, targetUser);
     if (updateChatUserDto.status == ChatUserStatus.MUTE && !updateChatUserDto.muteTime) {
-      throw new Error('Need limited mute time');
+      throw new BadRequestException('Need limited mute time');
     }
     if (updateChatUserDto.status != ChatUserStatus.MUTE && targetUser.muteTime) {
       updateChatUserDto.muteTime = null;
