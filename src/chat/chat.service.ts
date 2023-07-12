@@ -1,14 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Query } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../database/entities/chatroom.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
-import { ChatRole, ChatUserStatus } from '../database/entities/enums';
+import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
 import { ChatRoomData } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
+import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -73,6 +74,25 @@ export class ChatService {
 
   async findAllChannel() {
     return await this.chatRoomRepository.find();
+  }
+
+  async changeChatRoomInfo(execId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
+    const execUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: execId } });
+    if (!execUser) {
+      throw new Error('No Such UserId or RoomId');
+    }
+    if (execUser.role != ChatRole.OWNER) {
+      throw new Error('Permission Denied');
+    }
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+    if (updateChatRoomDto.roomMode == ChatRoomMode.PROTECTED && updateChatRoomDto.password == null) {
+      throw new Error('Need a password for protected room');
+    }
+    if (updateChatRoomDto.roomMode != ChatRoomMode.PROTECTED) {
+      updateChatRoomDto.password = null;
+    }
+    Object.assign(targetRoom, updateChatRoomDto);
+    return await this.chatRoomRepository.save(targetRoom);
   }
 
   checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {

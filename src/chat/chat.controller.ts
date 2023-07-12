@@ -3,6 +3,7 @@ import { ChatService } from './chat.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
+import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -35,10 +36,14 @@ export class ChatController {
     return this.chatService.enterChatRoom(createChatUserDto);
   }
 
-  // @Get(':id')
-  // findOne(@Param('id') id: string) {
-  //   return this.chatService.findOne(+id);
-  // }
+  @Patch('change-room-info')
+  changeChatRoomInfo(
+    @Query('execid') execId: number,
+    @Query('roomid') roomId: number,
+    @Body() updateChatRoomDto: UpdateChatRoomDto,
+  ) {
+    return this.chatService.changeChatRoomInfo(execId, roomId, updateChatRoomDto);
+  }
 
   @Patch('change-role')
   changeChatUserRole(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {
