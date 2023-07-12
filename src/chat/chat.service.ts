@@ -6,7 +6,7 @@ import { ChatRoom } from '../database/entities/chatroom.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
-import { ChatRoomData } from '../chat/chat-res.interface';
+import { ChatRoomData, ChannelSearchResult } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
@@ -26,7 +26,7 @@ export class ChatService {
     const chatRoomData = {} as ChatRoomData;
     chatRoomData.isChannel = targetRoom.roomMode != 'DIRECT' ? true : false;
     chatRoomData.name = targetRoom.roomName;
-    chatRoomData.haspassword = targetRoom.password == '' ? false : true;
+    chatRoomData.hasPassword = targetRoom.password == '' ? false : true;
     chatRoomData.users = await this.chatUserRepository.find({
       where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
     });
@@ -90,7 +90,17 @@ export class ChatService {
   }
 
   async findAllChannel() {
-    return await this.chatRoomRepository.find();
+    const allChannel = await this.chatRoomRepository.find();
+    const searchResult: ChannelSearchResult[] = [];
+    for (let index = 0; index < allChannel.length; index++) {
+      const element = allChannel[index];
+      const singleChannel = {} as ChannelSearchResult;
+      singleChannel.id = element.id;
+      singleChannel.name = element.roomName;
+      singleChannel.hasPassword = element.password ? true : false;
+      searchResult.push(singleChannel);
+    }
+    return searchResult;
   }
 
   async isChannelDm(roomId: number) {
