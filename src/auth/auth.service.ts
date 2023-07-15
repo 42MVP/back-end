@@ -8,7 +8,7 @@ export class AuthService {
   constructor(private readonly jwtService: JwtService, private readonly configService: ConfigService) {}
 
   private async getJwtAccessToken(user: User): Promise<string> {
-    const payload = { sub: user.intraId, email: user.email };
+    const payload = { sub: user.id };
     const signOptions = {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
       expiresIn: this.configService.get<string>('JWT_ACCESS_EXPIRATION'),
@@ -17,7 +17,7 @@ export class AuthService {
   }
 
   private async getJwtRefreshToken(user: User): Promise<string> {
-    const payload = { sub: user.intraId, email: user.email };
+    const payload = { sub: user.id };
     const signOptions = {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION'),
@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   async getTwoFactorToken(user: User): Promise<string> {
-    const payload = { sub: user.intraId, email: user.email };
+    const payload = { sub: user.id };
     const signOptions = {
       secret: this.configService.get<string>('TWO_FACTOR_SECRET'),
       expiresIn: this.configService.get<string>('TWO_FACTOR_EXPIRATION'),

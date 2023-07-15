@@ -11,8 +11,8 @@ export class UserService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async create(user: User): Promise<void> {
-    await this.usersRepository.save(user);
+  async create(user: User): Promise<User> {
+    return await this.usersRepository.save(user);
   }
 
   async findOneByIntraId(intraId: string): Promise<User> {

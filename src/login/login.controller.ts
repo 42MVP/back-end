@@ -31,19 +31,23 @@ export class LoginController {
   @Get('redirect')
   @UseGuards(FtAuthGuard)
   async ftLoginRedirect(@ExtractUser() user: User, @Res() res: Response): Promise<void> {
-    if (user.isAuth) {
-      const twoFactorToken = await this.authService.getTwoFactorToken(user);
-      res.cookie('two-factor-token', twoFactorToken).redirect('/two-factor');
-    } else {
-      const jwtToken = await this.authService.getJwtToken(user);
-      res.cookie('access-token', jwtToken.accessToken).cookie('refresh-token', jwtToken.refreshToken);
-      if (user.isRegister) {
-        await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
-        res.redirect('/');
+    if (user.isRegister) {
+      if (user.isAuth) {
+        const twoFactorToken = await this.authService.getTwoFactorToken(user);
+        res.cookie('two-factor-token', twoFactorToken).redirect('/two-factor');
       } else {
-        await this.loginService.register(user, jwtToken.refreshToken);
-        res.redirect('/register');
+        const jwtToken = await this.authService.getJwtToken(user);
+        await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
+        res.cookie('access-token', jwtToken.accessToken).cookie('refresh-token', jwtToken.refreshToken).redirect('/');
       }
+    } else {
+      const registedUser = await this.loginService.register(user);
+      const jwtToken = await this.authService.getJwtToken(registedUser);
+      await this.userService.updateRefreshToken(registedUser.id, jwtToken.refreshToken);
+      res
+        .cookie('access-token', jwtToken.accessToken)
+        .cookie('refresh-token', jwtToken.refreshToken)
+        .redirect('/register');
     }
   }
 }

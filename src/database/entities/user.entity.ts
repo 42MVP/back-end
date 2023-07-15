@@ -23,7 +23,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   email: string;
 
-  @Column({ type: 'varchar', nullable: false })
+  @Column({ type: 'varchar', nullable: true })
   refreshToken: string;
 
   status: UserStatus;
