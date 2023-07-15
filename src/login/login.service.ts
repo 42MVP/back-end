@@ -7,8 +7,8 @@ import { UserService } from 'src/user/user.service';
 export class LoginService {
   constructor(private readonly userService: UserService, private readonly authService: AuthService) {}
 
-  async register(user: User): Promise<User> {
+  async register(user: User): Promise<number> {
     user.userName = user.intraId;
-    return await this.userService.create(user);
+    return (await this.userService.create(user)).id;
   }
 }

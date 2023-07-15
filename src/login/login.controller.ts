@@ -33,17 +33,18 @@ export class LoginController {
   async ftLoginRedirect(@ExtractUser() user: User, @Res() res: Response): Promise<void> {
     if (user.isRegister) {
       if (user.isAuth) {
-        const twoFactorToken = await this.authService.getTwoFactorToken(user);
+        const twoFactorToken = await this.authService.getTwoFactorToken(user.id);
+        await this.authService.sendTwoFactorMail(user.email);
         res.cookie('two-factor-token', twoFactorToken).redirect('/two-factor');
       } else {
-        const jwtToken = await this.authService.getJwtToken(user);
+        const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
         res.cookie('access-token', jwtToken.accessToken).cookie('refresh-token', jwtToken.refreshToken).redirect('/');
       }
     } else {
-      const registedUser = await this.loginService.register(user);
-      const jwtToken = await this.authService.getJwtToken(registedUser);
-      await this.userService.updateRefreshToken(registedUser.id, jwtToken.refreshToken);
+      const registedUserId = await this.loginService.register(user);
+      const jwtToken = await this.authService.getJwtToken(registedUserId);
+      await this.userService.updateRefreshToken(registedUserId, jwtToken.refreshToken);
       res
         .cookie('access-token', jwtToken.accessToken)
         .cookie('refresh-token', jwtToken.refreshToken)
