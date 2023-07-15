@@ -1,8 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Body, Put, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from 'src/database/entities/user.entity';
 
+// @UseGuards(AuthGuard('jwt-auth'))
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -12,7 +13,7 @@ export class UserController {
     return await this.userService.findOneById(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
     return await this.userService.update(id, updateUserDto);
   }

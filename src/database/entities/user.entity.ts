@@ -1,6 +1,7 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from './enums';
 import { UpdateUserDto } from 'src/user/dto/update-user.dto';
+import { FtProfile } from 'src/auth/types';
 
 @Entity()
 export class User extends BaseEntity {
@@ -10,7 +11,7 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', length: 20, nullable: false, unique: true })
   intraId: string;
 
-  @Column({ type: 'varchar', nullable: true, unique: true })
+  @Column({ type: 'varchar', nullable: false, unique: true })
   userName: string;
 
   @Column({ type: 'boolean', default: false })
@@ -27,16 +28,15 @@ export class User extends BaseEntity {
 
   status: UserStatus;
 
-  static from(requestUser): User {
-    const user = new User();
-    user.intraId = requestUser.username;
-    user.isAuth = false;
-    user.email = requestUser.emails[0].value;
-    return user;
-  }
+  isRegister: boolean;
 
-  update(updateUserDto: UpdateUserDto) {
-    this.userName = updateUserDto.userName;
-    this.avatar = updateUserDto.avatar;
+  static from(requestUser: FtProfile): User {
+    const user = new User();
+    user.id = requestUser.indexId;
+    user.intraId = requestUser.username;
+    user.isAuth = requestUser.isAuth;
+    user.email = requestUser.emails[0].value;
+    user.isRegister = requestUser.isRegister;
+    return user;
   }
 }

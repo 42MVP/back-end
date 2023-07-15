@@ -1,5 +1,8 @@
 export type FtProfile = {
   id: string;
   username: string;
-  email: string;
+  emails: { value };
+  isRegister: boolean;
+  isAuth: boolean;
+  indexId: number;
 };

@@ -3,10 +3,12 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-42';
 import { ConfigService } from '@nestjs/config';
 import { FtProfile } from '../types';
+import { UserService } from 'src/user/user.service';
+import { User } from 'src/database/entities/user.entity';
 
 @Injectable()
 export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService, private readonly userService: UserService) {
     super({
       authorizationURL: `https://api.intra.42.fr/oauth/authorize?client_id=${configService.get<string>(
         '42API_CLIENT_ID',
@@ -22,6 +24,14 @@ export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {
   async validate(accessToken: string, refreshToken: string, profile: FtProfile): Promise<FtProfile> {
     if (accessToken === undefined || refreshToken === undefined || profile.username === undefined) {
       throw new UnauthorizedException();
+    }
+    try {
+      const user: User = await this.userService.findOneByIntraId(profile.username);
+      profile.isRegister = true;
+      profile.isAuth = user.isAuth;
+      profile.indexId = user.id;
+    } catch (NotFoundException) {
+      profile.isRegister = false;
     }
     return profile;
   }
