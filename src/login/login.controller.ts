@@ -1,4 +1,4 @@
-import { Controller, Get, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { LoginService } from './login.service';
 import { ExtractUser } from 'src/auth/decorators/extract-user.decorator';
@@ -7,6 +7,8 @@ import { AuthService } from 'src/auth/auth.service';
 import { FtAuthGuard } from 'src/auth/ft/ft-auth.guard';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { UserService } from 'src/user/user.service';
+import { AuthCodeDto } from './dto/auth-code.dto';
+import { TwoFactorAuthGuard } from 'src/auth/two-factor/two-factor-auth.guard';
 
 @Controller('login')
 export class LoginController {
@@ -34,7 +36,7 @@ export class LoginController {
     if (user.isRegister) {
       if (user.isAuth) {
         const twoFactorToken = await this.authService.getTwoFactorToken(user.id);
-        await this.authService.sendTwoFactorMail(user.email);
+        await this.authService.sendTwoFactorMail(user.email, user.id);
         res.cookie('two-factor-token', twoFactorToken).redirect('/two-factor');
       } else {
         const jwtToken = await this.authService.getJwtToken(user.id);
@@ -50,5 +52,18 @@ export class LoginController {
         .cookie('refresh-token', jwtToken.refreshToken)
         .redirect('/register');
     }
+  }
+
+  @Post('2fa-auth/:id')
+  @UseGuards(TwoFactorAuthGuard)
+  async twoFactorAuth(@Param('id') id: number, @Body() authCode: AuthCodeDto, @Res() res: Response) {
+    await this.authService.checkCode(id.toString(), authCode.code);
+    const jwtToken = await this.authService.getJwtToken(id);
+    await this.userService.updateRefreshToken(id, jwtToken.refreshToken);
+    res
+      .clearCookie('two-factor-token')
+      .cookie('access-token', jwtToken.accessToken)
+      .cookie('refresh-token', jwtToken.refreshToken)
+      .send();
   }
 }

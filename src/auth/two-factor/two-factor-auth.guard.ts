@@ -1,8 +1,8 @@
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class JwtAuthGuard extends AuthGuard('jwt-auth') {
+export class TwoFactorAuthGuard extends AuthGuard('2fa-auth') {
   constructor() {
     super();
   }
@@ -13,7 +13,7 @@ export class JwtAuthGuard extends AuthGuard('jwt-auth') {
 
   handleRequest(err, user) {
     if (err || !user) {
-      throw err || new UnauthorizedException('JWT 인증 에러');
+      throw err || new UnauthorizedException('TWO-FACTOR 토큰 에러');
     }
     return user;
   }
