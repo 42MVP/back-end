@@ -1,7 +1,7 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from './enums';
-import { UpdateUserDto } from 'src/user/dto/update-user.dto';
 import { FtProfile } from 'src/auth/types';
+import { Friendship } from './friendship.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -25,6 +25,18 @@ export class User extends BaseEntity {
 
   @Column({ type: 'varchar', nullable: true })
   refreshToken: string;
+
+  @Column({ type: 'int', default: 0 })
+  winNum: number;
+
+  @Column({ type: 'int', default: 0 })
+  loseNum: number;
+
+  @Column({ type: 'int', default: 0 })
+  rating: number;
+
+  @OneToMany(type => Friendship, friendship => friendship.to)
+  friendships: Friendship[];
 
   status: UserStatus;
 
