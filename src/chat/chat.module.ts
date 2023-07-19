@@ -8,11 +8,7 @@ import { ChatUser } from '../database/entities/chatuser.entity';
 import { ChatGateway } from './chat.gateway';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([ChatRoom]),
-    TypeOrmModule.forFeature([ChatUser]),
-    TypeOrmModule.forFeature([User]),
-  ],
+  imports: [TypeOrmModule.forFeature([ChatRoom, ChatUser, User])],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
 })

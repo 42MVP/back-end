@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +10,7 @@ import { ChatRoomData, ChannelSearchResult } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
@@ -20,6 +21,8 @@ export class ChatService {
     private chatUserRepository: Repository<ChatUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @Inject(ChatGateway)
+    private chatGateway: ChatGateway,
   ) {}
 
   async getChatRoomData(targetRoom: ChatRoom): Promise<ChatRoomData> {
@@ -160,7 +163,9 @@ export class ChatService {
     });
     this.checkUserAutority(execUser, targetUser);
     Object.assign(targetUser, updateChatUserDto);
-    return await this.chatUserRepository.save(targetUser);
+    await this.chatUserRepository.save(targetUser);
+    this.chatGateway.handleUserRole(updateChatUserDto.roomId.toString(), updateChatUserDto.role);
+    return;
   }
 
   async changeChatUserStatus(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
@@ -181,7 +186,9 @@ export class ChatService {
       updateChatUserDto.muteTime = null;
     }
     Object.assign(targetUser, updateChatUserDto);
-    return await this.chatUserRepository.save(targetUser);
+    await this.chatUserRepository.save(targetUser);
+    this.chatGateway.handleUserStatus(updateChatUserDto.roomId.toString(), updateChatUserDto.status);
+    return;
   }
 
   async exitChatRoom(userId: number, roomId: number) {
