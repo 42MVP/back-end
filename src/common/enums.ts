@@ -3,3 +3,7 @@ export enum UserStatus {
   OFFLINE = 'OFFLINE',
   GAMING = 'GAMING',
 }
+
+export enum EAchievement {
+  TEN_WINS = 'TenWins',
+}

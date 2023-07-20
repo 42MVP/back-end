@@ -2,9 +2,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-42';
 import { ConfigService } from '@nestjs/config';
-import { FtProfile } from '../types';
+import { FtProfile } from '../../common/types/ftProfile';
 import { UserService } from 'src/user/user.service';
-import { User } from 'src/database/entities/user.entity';
+import { User } from 'src/common/entities/user.entity';
 
 @Injectable()
 export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {

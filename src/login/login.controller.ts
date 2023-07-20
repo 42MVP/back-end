@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/comm
 import { Response } from 'express';
 import { LoginService } from './login.service';
 import { ExtractUser } from 'src/auth/decorators/extract-user.decorator';
-import { User } from 'src/database/entities/user.entity';
+import { User } from 'src/common/entities/user.entity';
 import { AuthService } from 'src/auth/auth.service';
 import { FtAuthGuard } from 'src/auth/ft/ft-auth.guard';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
