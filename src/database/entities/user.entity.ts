@@ -2,6 +2,7 @@ import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 't
 import { UserStatus } from './enums';
 import { FtProfile } from 'src/auth/types';
 import { Friendship } from './friendship.entity';
+import { GameHistory } from './game-history.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -35,8 +36,11 @@ export class User extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   rating: number;
 
-  @OneToMany(type => Friendship, friendship => friendship.to)
+  @OneToMany(() => Friendship, friendship => friendship.to)
   friendships: Friendship[];
+
+  @OneToMany(() => GameHistory, gameHistory => gameHistory.winner)
+  gameHistories: GameHistory[];
 
   status: UserStatus;
 
