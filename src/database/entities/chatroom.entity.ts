@@ -14,4 +14,12 @@ export class ChatRoom extends BaseEntity {
 
   @Column({ type: 'varchar', nullable: true })
   password: string;
+
+  static from(roomName: string, roomMode: ChatRoomMode, password: string) {
+    const chatRoom: ChatRoom = new ChatRoom();
+    chatRoom.roomName = roomName;
+    chatRoom.roomMode = roomMode;
+    chatRoom.password = password;
+    return chatRoom;
+  }
 }
