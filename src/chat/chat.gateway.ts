@@ -4,15 +4,26 @@ import { ChatMessageDto } from './dto/request/chat-message.dto';
 import { ChatUserStatus } from '../database/entities/enums';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
+import { UserSocketRepository } from 'src/repository/user-socket.repository';
 
+let userId = 1;
 @WebSocketGateway()
 export class ChatGateway {
+  constructor(private readonly userSocketRepository: UserSocketRepository) {}
   @WebSocketServer()
   server: Server;
 
+  // 테스트용 connection 함수: 실제 구동에는 사용하지 않습니다.
+  handleConnection(@ConnectedSocket() client: Socket) {
+    console.log(`${userId}: socketid [${client.id}]`);
+    this.userSocketRepository.save(userId, client.id);
+    userId++;
+  }
+
   @SubscribeMessage('send-message')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
-    this.server.to(message.roomId).emit('receive-message', message);
+    const roomName: string = message.roomId.toString();
+    this.server.to(roomName).emit('receive-message', message);
     return;
   }
 
@@ -41,10 +52,15 @@ export class ChatGateway {
     switch (newStatus.status) {
       case ChatUserStatus.BAN:
         this.server.to(roomName).emit('ban', newStatus);
+        break;
       case ChatUserStatus.KICK:
         this.server.to(roomName).emit('kick', newStatus);
+        break;
       case ChatUserStatus.MUTE:
         this.server.to(roomName).emit('mute', newStatus);
+        break;
+      default:
+        break;
     }
     return;
   }
