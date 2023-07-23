@@ -121,26 +121,28 @@ export class ChatService {
     return targetChannel.roomMode == ChatRoomMode.DIRECT ? true : false;
   }
 
-  async changeChatRoomInfo(execId: number, roomId: number, updateChatRoomDto: UpdateChatRoomDto) {
-    if (await this.isChannelDm(roomId)) {
+  async changeChatRoomInfo(changeInfo: UpdateChatRoomDto) {
+    if (await this.isChannelDm(changeInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
-    const execUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: execId } });
+    const execUser = await this.chatUserRepository.findOne({
+      where: { roomId: changeInfo.roomId, userId: changeInfo.execUserId },
+    });
     if (!execUser) {
       throw new NotFoundException('No Such UserId or RoomId');
     }
     if (execUser.role != ChatRole.OWNER) {
       throw new BadRequestException('Permission Denied');
     }
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
-    updateChatRoomDto.roomName = targetRoom.roomName;
-    if (updateChatRoomDto.roomMode == ChatRoomMode.PROTECTED && updateChatRoomDto.password == null) {
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeInfo.roomId } });
+    changeInfo.roomName = targetRoom.roomName;
+    if (changeInfo.roomMode == ChatRoomMode.PROTECTED && changeInfo.password == null) {
       throw new BadRequestException('Need a password for protected room');
     }
-    if (updateChatRoomDto.roomMode != ChatRoomMode.PROTECTED) {
-      updateChatRoomDto.password = null;
+    if (changeInfo.roomMode != ChatRoomMode.PROTECTED) {
+      changeInfo.password = null;
     }
-    Object.assign(targetRoom, updateChatRoomDto);
+    Object.assign(targetRoom, changeInfo.toChatRoomEntity());
     return await this.chatRoomRepository.save(targetRoom);
   }
 

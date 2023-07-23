@@ -37,12 +37,8 @@ export class ChatController {
   }
 
   @Patch('change-room-info')
-  changeChatRoomInfo(
-    @Query('execid') execId: number,
-    @Query('roomid') roomId: number,
-    @Body() updateChatRoomDto: UpdateChatRoomDto,
-  ) {
-    return this.chatService.changeChatRoomInfo(execId, roomId, updateChatRoomDto);
+  changeChatRoomInfo(@Body() changeInfo: UpdateChatRoomDto) {
+    return this.chatService.changeChatRoomInfo(changeInfo);
   }
 
   @Patch('change-role')
