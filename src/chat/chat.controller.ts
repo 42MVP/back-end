@@ -19,21 +19,21 @@ export class ChatController {
     return this.chatService.getChatRoomList(id);
   }
 
-  // doxygen 작성!! 제발!@
-  @Post('enter-room')
-  enterChatRoom(@Body() createChatUserDto: CreateChatUserDto) {
-    // 있는 채팅방 들어감
-    return this.chatService.enterChatRoom(createChatUserDto);
-  }
-
   @Post('create-room')
   createChatRoom(@Body() newRoomInfo: CreateRoomDto) {
     return this.chatService.createChatRoom(newRoomInfo);
   }
 
+  // doxygen 작성!! 제발!@
+  @Post('enter-room')
+  enterChatRoom(@Body() newChatUser: CreateChatUserDto) {
+    // 있는 채팅방 들어감
+    return this.chatService.enterChatRoom(newChatUser);
+  }
+
   @Post('invite')
-  inviteChatUser(@Body() createChatUserDto: CreateChatUserDto) {
-    return this.chatService.enterChatRoom(createChatUserDto);
+  inviteChatUser(@Body() invitedChatUser: CreateChatUserDto) {
+    return this.chatService.enterChatRoom(invitedChatUser);
   }
 
   @Patch('change-room-info')

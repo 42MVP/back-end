@@ -9,8 +9,9 @@ import { ChatRoomData, ChannelSearchResult } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
-import { ChatGateway } from './chat.gateway';
 import { CreateRoomDto } from './dto/create-room.dto';
+import { UserSocketRepository } from 'src/repository/user-socket.repository';
+import { ChatGateway } from './chat.gateway';
 
 @Injectable()
 export class ChatService {
@@ -21,7 +22,7 @@ export class ChatService {
     private chatUserRepository: Repository<ChatUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    @Inject(ChatGateway)
+    private userSocketRepository: UserSocketRepository,
     private chatGateway: ChatGateway,
   ) {}
 
@@ -57,24 +58,30 @@ export class ChatService {
     return chatRoomList;
   }
 
-  async enterChatRoom(createChatUserDto: CreateChatUserDto) {
-    const existUser = await this.chatUserRepository.findOne({
-      where: { roomId: createChatUserDto.roomId, userId: createChatUserDto.userId },
+  async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
+    const isExistUser = await this.chatUserRepository.findOne({
+      where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
-    if (existUser && existUser.status == ChatUserStatus.BAN) {
+    if (isExistUser && isExistUser.status == ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
-    return await this.chatUserRepository.save(createChatUserDto);
+    const createdUser = await this.chatUserRepository.save(newChatUser.toChatUserEntity());
+    const userSocketId = this.userSocketRepository.find(createdUser.userId);
+    this.chatGateway.joinChatRoom(userSocketId, createdUser.roomId);
+    return createdUser;
   }
 
-  async enterChatOwner(roomId: number, userId: number) {
-    const newInitialChatUser: CreateChatUserDto = {} as CreateChatUserDto;
-    newInitialChatUser.roomId = roomId;
-    newInitialChatUser.userId = userId;
-    newInitialChatUser.status = ChatUserStatus.NONE;
-    newInitialChatUser.role = ChatRole.OWNER;
-    newInitialChatUser.muteTime = null;
-    return await this.chatUserRepository.save(newInitialChatUser);
+  async enterChatOwner(roomId: number, userId: number): Promise<void> {
+    const newChatOwner: CreateChatUserDto = {} as CreateChatUserDto;
+    newChatOwner.roomId = roomId;
+    newChatOwner.userId = userId;
+    newChatOwner.status = ChatUserStatus.NONE;
+    newChatOwner.role = ChatRole.OWNER;
+    newChatOwner.muteTime = null;
+    await this.chatUserRepository.save(newChatOwner.toChatUserEntity());
+    const userSocketId = this.userSocketRepository.find(userId);
+    this.chatGateway.joinChatRoom(userSocketId, roomId);
+    return;
   }
 
   async createChatRoom(newRoomInfo: CreateRoomDto): Promise<ChatRoom> {
