@@ -14,6 +14,13 @@ export class ChatGateway {
     return;
   }
 
+  joinChatRoom(userSocket: string, roomId: number) {
+    const roomName: string = roomId.toString();
+    this.server.in(userSocket).socketsJoin(roomName);
+    this.server.to(roomName).emit('join');
+    return;
+  }
+
   handleUserStatus(roomId: string, newStatus: ChatUserStatus): void {
     if (newStatus == ChatUserStatus.BAN) {
       this.server.to(roomId).emit('ban', 'ban');
