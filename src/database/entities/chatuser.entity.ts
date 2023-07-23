@@ -27,4 +27,14 @@ export class ChatUser extends BaseEntity {
 
   @Column({ type: Date, nullable: true })
   muteTime: Date;
+
+  static from(roomId: number, userId: number, status: ChatUserStatus, role: ChatRole, muteTime: Date) {
+    const chatUser: ChatUser = new ChatUser();
+    chatUser.roomId = roomId;
+    chatUser.userId = userId;
+    chatUser.status = status;
+    chatUser.role = role;
+    chatUser.muteTime = muteTime;
+    return chatUser;
+  }
 }

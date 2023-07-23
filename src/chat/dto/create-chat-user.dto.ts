@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ChatRole, ChatUserStatus } from '../../database/entities/enums';
+import { ChatUser } from 'src/database/entities/chatuser.entity';
 
 export class CreateChatUserDto {
   @IsNotEmpty()
@@ -17,4 +18,8 @@ export class CreateChatUserDto {
   role: ChatRole;
 
   muteTime: Date;
+
+  public toChatUserEntity() {
+    return ChatUser.from(this.roomId, this.userId, this.status, this.role, this.muteTime);
+  }
 }
