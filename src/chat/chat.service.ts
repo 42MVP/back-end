@@ -1,5 +1,4 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../database/entities/chatroom.entity';
@@ -11,6 +10,7 @@ import { CreateChatUserDto } from './dto/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
 import { ChatGateway } from './chat.gateway';
+import { CreateRoomDto } from './dto/create-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -67,33 +67,32 @@ export class ChatService {
     return await this.chatUserRepository.save(createChatUserDto);
   }
 
-  createInitialChatUser(roomId: number, userId: number): CreateChatUserDto {
+  async enterChatOwner(roomId: number, userId: number) {
     const newInitialChatUser: CreateChatUserDto = {} as CreateChatUserDto;
     newInitialChatUser.roomId = roomId;
     newInitialChatUser.userId = userId;
     newInitialChatUser.status = ChatUserStatus.NONE;
     newInitialChatUser.role = ChatRole.OWNER;
     newInitialChatUser.muteTime = null;
-    return newInitialChatUser;
+    return await this.chatUserRepository.save(newInitialChatUser);
   }
 
-  async createChatRoom(userId: number, dmId: number, createChatRoomDto: CreateChatRoomDto) {
-    if (createChatRoomDto.roomMode == ChatRoomMode.DIRECT) {
-      if (!dmId) {
-        throw new BadRequestException('DM need a target user');
+  async createChatRoom(newRoomInfo: CreateRoomDto): Promise<ChatRoom> {
+    if (newRoomInfo.roomMode == ChatRoomMode.PROTECTED) {
+      if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
+    } else {
+      if (newRoomInfo.roomMode == ChatRoomMode.DIRECT) {
+        if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
+        newRoomInfo.roomName = null;
       }
-      createChatRoomDto.roomName = null;
-      createChatRoomDto.password = null;
-    } else if (createChatRoomDto.roomMode == ChatRoomMode.PROTECTED && !createChatRoomDto.password) {
-      throw new BadRequestException('Protected room need a password');
+      newRoomInfo.password = null;
     }
-    const newRoom = await this.chatRoomRepository.save(createChatRoomDto);
+    const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
+    await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
     if (newRoom.roomMode == ChatRoomMode.DIRECT) {
-      const newDmUser = this.createInitialChatUser(newRoom.id, dmId);
-      await this.enterChatRoom(newDmUser);
+      await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
     }
-    const newChatUser = this.createInitialChatUser(newRoom.id, userId);
-    return await this.enterChatRoom(newChatUser);
+    return newRoom;
   }
 
   async findAllChannel() {
