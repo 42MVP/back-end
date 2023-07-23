@@ -76,7 +76,7 @@ export class ChatService {
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
-    const newChatOwner: CreateChatUserDto = {} as CreateChatUserDto;
+    const newChatOwner: CreateChatUserDto = new CreateChatUserDto();
     newChatOwner.roomId = roomId;
     newChatOwner.userId = userId;
     newChatOwner.status = ChatUserStatus.NONE;
@@ -177,7 +177,7 @@ export class ChatService {
     this.checkUserAutority(execUser, targetUser);
     Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
-    const changedRole: ChangedUserRoleDto = {} as ChangedUserRoleDto;
+    const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
     changedRole.changedRole = targetUser.role;
     this.chatGateway.sendChangedUserRole(changedRole, targetUser.roomId);
@@ -203,7 +203,7 @@ export class ChatService {
     }
     Object.assign(targetUser, changeChatUserInfo);
     await this.chatUserRepository.save(targetUser);
-    const changedStatus: ChangedUserStatusDto = {} as ChangedUserStatusDto;
+    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
     changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
     changedStatus.status = targetUser.status;
     this.chatGateway.sendChangedUserStatus(changedStatus, targetUser.roomId);
