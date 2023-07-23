@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
-import { ChatRole, ChatUserStatus } from '../../database/entities/enums';
+import { ChatRole, ChatUserStatus } from '../../../database/entities/enums';
 import { ChatUser } from 'src/database/entities/chatuser.entity';
 
 export class CreateChatUserDto {

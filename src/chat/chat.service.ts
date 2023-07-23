@@ -1,4 +1,4 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../database/entities/chatroom.entity';
@@ -6,10 +6,10 @@ import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
 import { ChatRoomData, ChannelSearchResult } from '../chat/chat-res.interface';
-import { CreateChatUserDto } from './dto/create-chat-user.dto';
-import { UpdateChatUserDto } from './dto/update-chat-user.dto';
-import { UpdateChatRoomDto } from './dto/update-chat-room.dto';
-import { CreateRoomDto } from './dto/create-room.dto';
+import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
+import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
+import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
+import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 
@@ -84,7 +84,7 @@ export class ChatService {
     return;
   }
 
-  async createChatRoom(newRoomInfo: CreateRoomDto): Promise<ChatRoom> {
+  async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
     if (newRoomInfo.roomMode == ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
     } else {

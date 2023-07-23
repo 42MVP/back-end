@@ -1,8 +1,8 @@
 import { IsNotEmpty } from 'class-validator';
-import { ChatRoomMode } from '../../database/entities/enums';
-import { ChatRoom } from '../../database/entities/chatroom.entity';
+import { ChatRoomMode } from '../../../database/entities/enums';
+import { ChatRoom } from '../../../database/entities/chatroom.entity';
 
-export class CreateRoomDto {
+export class CreateChatRoomDto {
   @IsNotEmpty()
   userId: number;
 
