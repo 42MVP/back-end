@@ -12,6 +12,8 @@ import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
+import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
+import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 
 @Injectable()
 export class ChatService {
@@ -159,43 +161,49 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserRole(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
-    if (await this.isChannelDm(updateChatUserDto.roomId)) {
+  async changeChatUserRole(changeChatUserInfo: UpdateChatUserDto) {
+    if (await this.isChannelDm(changeChatUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: updateChatUserDto.roomId, userId: execUserId },
+      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.execUserId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: updateChatUserDto.roomId, userId: updateChatUserDto.userId },
+      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    Object.assign(targetUser, updateChatUserDto);
+    Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
-    this.chatGateway.handleUserRole(updateChatUserDto.roomId.toString(), updateChatUserDto.role);
+    const changedRole: ChangedUserRoleDto = {} as ChangedUserRoleDto;
+    changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
+    changedRole.changedRole = targetUser.role;
+    this.chatGateway.sendChangedUserRole(changedRole, targetUser.roomId);
     return;
   }
 
-  async changeChatUserStatus(execUserId: number, updateChatUserDto: UpdateChatUserDto) {
-    if (await this.isChannelDm(updateChatUserDto.roomId)) {
+  async changeChatUserStatus(changeChatUserInfo: UpdateChatUserDto) {
+    if (await this.isChannelDm(changeChatUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: updateChatUserDto.roomId, userId: execUserId },
+      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.execUserId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: updateChatUserDto.roomId, userId: updateChatUserDto.userId },
+      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    if (updateChatUserDto.status == ChatUserStatus.MUTE && !updateChatUserDto.muteTime) {
+    if (changeChatUserInfo.status == ChatUserStatus.MUTE && !changeChatUserInfo.muteTime) {
       throw new BadRequestException('Need limited mute time');
     }
-    if (updateChatUserDto.status != ChatUserStatus.MUTE && targetUser.muteTime) {
-      updateChatUserDto.muteTime = null;
+    if (changeChatUserInfo.status != ChatUserStatus.MUTE && targetUser.muteTime) {
+      changeChatUserInfo.muteTime = null;
     }
-    Object.assign(targetUser, updateChatUserDto);
+    Object.assign(targetUser, changeChatUserInfo);
     await this.chatUserRepository.save(targetUser);
-    this.chatGateway.handleUserStatus(updateChatUserDto.roomId.toString(), updateChatUserDto.status);
+    const changedStatus: ChangedUserStatusDto = {} as ChangedUserStatusDto;
+    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
+    changedStatus.status = targetUser.status;
+    this.chatGateway.sendChangedUserStatus(changedStatus, targetUser.roomId);
     return;
   }
 

@@ -1,7 +1,9 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatMessageDto } from './dto/request/chat-message.dto';
-import { ChatRole, ChatUserStatus } from '../database/entities/enums';
+import { ChatUserStatus } from '../database/entities/enums';
+import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
+import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 
 @WebSocketGateway()
 export class ChatGateway {
@@ -21,22 +23,21 @@ export class ChatGateway {
     return;
   }
 
-  handleUserStatus(roomId: string, newStatus: ChatUserStatus): void {
-    if (newStatus == ChatUserStatus.BAN) {
-      this.server.to(roomId).emit('ban', 'ban');
-    } else if (newStatus == ChatUserStatus.KICK) {
-      this.server.to(roomId).emit('kick', 'kick');
-    } else if (newStatus == ChatUserStatus.MUTE) {
-      this.server.to(roomId).emit('mute', 'mute');
-    }
+  sendChangedUserRole(newRole: ChangedUserRoleDto, roomId: number): void {
+    const roomName: string = roomId.toString();
+    this.server.to(roomName).emit('userMode', newRole);
     return;
   }
 
-  handleUserRole(roomId: string, newRole: ChatRole): void {
-    if (newRole == ChatRole.ADMIN) {
-      this.server.to(roomId).emit('userMode', 'admin');
-    } else {
-      this.server.to(roomId).emit('userMode', 'user');
+  sendChangedUserStatus(newStatus: ChangedUserStatusDto, roomId: number): void {
+    const roomName: string = roomId.toString();
+    switch (newStatus.status) {
+      case ChatUserStatus.BAN:
+        this.server.to(roomName).emit('ban', newStatus);
+      case ChatUserStatus.KICK:
+        this.server.to(roomName).emit('kick', newStatus);
+      case ChatUserStatus.MUTE:
+        this.server.to(roomName).emit('mute', newStatus);
     }
     return;
   }
