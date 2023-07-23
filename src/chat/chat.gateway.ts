@@ -16,10 +16,17 @@ export class ChatGateway {
     return;
   }
 
-  joinChatRoom(userSocket: string, roomId: number) {
+  joinChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
-    this.server.to(roomName).emit('join');
+    this.server.to(roomName).emit('join', userName);
+    return;
+  }
+
+  exitChatRoom(userSocket: string, userName: string, roomId: number) {
+    const roomName: string = roomId.toString();
+    this.server.in(userSocket).socketsLeave(roomName);
+    this.server.to(roomName).emit('leave', userName);
     return;
   }
 

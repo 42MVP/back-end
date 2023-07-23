@@ -14,6 +14,7 @@ import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
+import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -69,7 +70,8 @@ export class ChatService {
     }
     const createdUser = await this.chatUserRepository.save(newChatUser.toChatUserEntity());
     const userSocketId = this.userSocketRepository.find(createdUser.userId);
-    this.chatGateway.joinChatRoom(userSocketId, createdUser.roomId);
+    const userName = (await this.userRepository.findOne({ where: { id: createdUser.userId } })).userName;
+    this.chatGateway.joinChatRoom(userSocketId, userName, createdUser.roomId);
     return createdUser;
   }
 
@@ -80,9 +82,10 @@ export class ChatService {
     newChatOwner.status = ChatUserStatus.NONE;
     newChatOwner.role = ChatRole.OWNER;
     newChatOwner.muteTime = null;
-    await this.chatUserRepository.save(newChatOwner.toChatUserEntity());
+    const createdOwner = await this.chatUserRepository.save(newChatOwner.toChatUserEntity());
     const userSocketId = this.userSocketRepository.find(userId);
-    this.chatGateway.joinChatRoom(userSocketId, roomId);
+    const ownerName = (await this.userRepository.findOne({ where: { id: createdOwner.userId } })).userName;
+    this.chatGateway.joinChatRoom(userSocketId, ownerName, roomId);
     return;
   }
 
@@ -207,13 +210,18 @@ export class ChatService {
     return;
   }
 
-  async exitChatRoom(userId: number, roomId: number) {
-    const exitUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: userId } });
+  async exitChatRoom(exitInfo: ExitChatRoomDto) {
+    const exitUser = await this.chatUserRepository.findOne({
+      where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
+    });
+    const userSocketId = this.userSocketRepository.find(exitInfo.userId);
+    const userName = (await this.userRepository.findOne({ where: { id: exitUser.userId } })).userName;
+    this.chatGateway.exitChatRoom(userSocketId, userName, exitInfo.roomId);
     if (exitUser.role != ChatRole.OWNER) {
       return await this.chatUserRepository.remove(exitUser);
     } else {
-      const exitRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
-      const chatUsers = await this.chatUserRepository.find({ where: { roomId: roomId } });
+      const exitRoom = await this.chatRoomRepository.findOne({ where: { id: exitInfo.roomId } });
+      const chatUsers = await this.chatUserRepository.find({ where: { roomId: exitInfo.roomId } });
       await this.chatUserRepository.remove(chatUsers);
       return await this.chatRoomRepository.remove(exitRoom);
     }

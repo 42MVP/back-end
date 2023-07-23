@@ -4,6 +4,7 @@ import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
+import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 
 @Controller('chat')
 export class ChatController {
@@ -52,7 +53,7 @@ export class ChatController {
   }
 
   @Delete('exit-room')
-  exitChatRoom(@Query('userid') userId: number, @Query('roomid') roomId: number) {
-    return this.chatService.exitChatRoom(userId, roomId);
+  exitChatRoom(@Body() exitInfo: ExitChatRoomDto) {
+    return this.chatService.exitChatRoom(exitInfo);
   }
 }
