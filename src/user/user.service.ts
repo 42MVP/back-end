@@ -8,15 +8,15 @@ import { Repository, UpdateResult } from 'typeorm';
 export class UserService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private userRepository: Repository<User>,
   ) {}
 
   async create(user: User): Promise<User> {
-    return await this.usersRepository.save(user);
+    return await this.userRepository.save(user);
   }
 
   async findOneByIntraId(intraId: string): Promise<User> {
-    const user = await this.usersRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         intraId: intraId,
       },
@@ -28,7 +28,7 @@ export class UserService {
   }
 
   async findOneById(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: {
         id: id,
       },
@@ -40,7 +40,7 @@ export class UserService {
   }
 
   async updateRefreshToken(id: number, refreshToken: string): Promise<void> {
-    const result: UpdateResult = await this.usersRepository.update(
+    const result: UpdateResult = await this.userRepository.update(
       {
         id: id,
       },
@@ -54,7 +54,7 @@ export class UserService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<void> {
-    const result: UpdateResult = await this.usersRepository
+    const result: UpdateResult = await this.userRepository
       .update(
         {
           id: id,
