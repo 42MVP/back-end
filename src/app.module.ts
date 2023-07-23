@@ -7,8 +7,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { LoginModule } from './login/login.module';
-import { FriendController } from './friend/friend.controller';
 import { FriendModule } from './friend/friend.module';
+import { BlockModule } from './block/block.module';
 
 @Module({
   imports: [
@@ -21,6 +21,7 @@ import { FriendModule } from './friend/friend.module';
     AuthModule,
     LoginModule,
     FriendModule,
+    BlockModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -11,7 +11,7 @@ export class FriendService {
     private userRepository: Repository<User>,
   ) {}
 
-  async getFriendsList(id: number) {
+  async getFriendsList(id: number): Promise<User[]> {
     // const friendships = await this.friendshipRepository.find({
     //   where: {
     //     fromId: id,
