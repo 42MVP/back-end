@@ -6,7 +6,7 @@ import { ChatRoom } from '../database/entities/chatroom.entity';
 import { User } from '../database/entities/user.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { ChatGateway } from './chat.gateway';
-import { RepositoryModule } from 'src/repository/repository.module';
+import { RepositoryModule } from '../repository/repository.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ChatRoom, ChatUser, User]), RepositoryModule],

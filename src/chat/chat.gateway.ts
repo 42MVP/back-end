@@ -4,7 +4,7 @@ import { ChatMessageDto } from './dto/request/chat-message.dto';
 import { ChatUserStatus } from '../database/entities/enums';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
-import { UserSocketRepository } from 'src/repository/user-socket.repository';
+import { UserSocketRepository } from '../repository/user-socket.repository';
 
 let userId = 1;
 @WebSocketGateway()
