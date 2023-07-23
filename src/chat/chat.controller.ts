@@ -42,13 +42,13 @@ export class ChatController {
   }
 
   @Patch('change-role')
-  changeChatUserRole(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {
-    return this.chatService.changeChatUserRole(execUserId, updateChatUserDto);
+  changeChatUserRole(@Body() changeChatUserInfo: UpdateChatUserDto) {
+    return this.chatService.changeChatUserRole(changeChatUserInfo);
   }
 
   @Patch('change-status')
-  changeChatUserStatus(@Query('execid') execUserId: number, @Body() updateChatUserDto: UpdateChatUserDto) {
-    return this.chatService.changeChatUserStatus(execUserId, updateChatUserDto);
+  changeChatUserStatus(@Body() changeChatUserInfo: UpdateChatUserDto) {
+    return this.chatService.changeChatUserStatus(changeChatUserInfo);
   }
 
   @Delete('exit-room')
