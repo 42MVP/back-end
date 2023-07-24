@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseFilters } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseFilters, Delete } from '@nestjs/common';
 import { BlockService } from './block.service';
 import { User } from 'src/common/entities/user.entity';
 import { QueryFailedErrorFilter } from 'src/common/filters/query-failed.filter';
@@ -17,5 +17,10 @@ export class BlockController {
   @UseFilters(new QueryFailedErrorFilter())
   async block(@Body() blockDto: BlockDto): Promise<void> {
     await this.blockService.addBlockList(blockDto.from, blockDto.to);
+  }
+
+  @Delete()
+  async unfolllw(@Body() blockDto: BlockDto): Promise<void> {
+    await this.blockService.removeBlockList(blockDto.from, blockDto.to);
   }
 }

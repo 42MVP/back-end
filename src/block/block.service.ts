@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Block } from 'src/common/entities/block.entity';
 import { User } from 'src/common/entities/user.entity';
 import { UserService } from 'src/user/user.service';
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 
 @Injectable()
 export class BlockService {
@@ -29,5 +29,12 @@ export class BlockService {
       throw new NotFoundException('차단 할 유저가 존재하지 않습니다!');
     }
     await this.blockRepository.save(new Block(from, to));
+  }
+
+  async removeBlockList(from: number, to: number): Promise<void> {
+    const result: DeleteResult = await this.blockRepository.delete({ fromId: from, toId: to });
+    if (result.affected == 0) {
+      throw new NotFoundException('해당 유저를 차단하고 있지 않습니다!');
+    }
   }
 }
