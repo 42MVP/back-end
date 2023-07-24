@@ -6,12 +6,10 @@ import {
   Entity,
   Index,
   ManyToOne,
-  PrimaryColumn,
   PrimaryGeneratedColumn,
-  Unique,
 } from 'typeorm';
 import { User } from './user.entity';
-import { BadRequestException } from '@nestjs/common';
+import { ConflictException } from '@nestjs/common';
 
 @Entity()
 @Index(['toId', 'fromId'], { unique: true })
@@ -41,7 +39,7 @@ export class Friendship extends BaseEntity {
   @BeforeUpdate()
   checkFieldValues() {
     if (this.fromId === this.toId) {
-      throw new BadRequestException('자기 자신을 친구로 등록할 수 없습니다!');
+      throw new ConflictException('자기 자신을 친구로 등록할 수 없습니다!');
     }
   }
 }

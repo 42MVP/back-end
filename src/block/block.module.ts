@@ -4,9 +4,10 @@ import { BlockController } from './block.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { Block } from 'src/common/entities/block.entity';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Block])],
+  imports: [TypeOrmModule.forFeature([User, Block]), UserModule],
   controllers: [BlockController],
   providers: [BlockService],
 })
