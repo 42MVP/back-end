@@ -6,9 +6,9 @@ export class Block extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User, user => user.friendships, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   from: number;
 
-  @ManyToOne(() => User, user => user.friendships, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   to: number;
 }

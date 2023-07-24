@@ -21,6 +21,6 @@ export class FriendController {
 
   @Delete()
   async unfolllw(@Body() followDto: FollowDto): Promise<void> {
-    // await this.friendService.r
+    await this.friendService.removeFriendList(followDto.from, followDto.to);
   }
 }

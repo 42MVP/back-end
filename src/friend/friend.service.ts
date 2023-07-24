@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
-import { Repository } from 'typeorm';
+import { DeleteResult, Repository } from 'typeorm';
 import { Friendship } from 'src/common/entities/friendship.entity';
 import { UserService } from 'src/user/user.service';
 
@@ -58,10 +58,9 @@ export class FriendService {
   }
 
   async removeFriendList(from: number, to: number): Promise<void> {
-    const toUser = await this.userService.findOneById(to);
-    if (!toUser) {
-      throw new NotFoundException('팔로우할 유저가 존재하지 않습니다!');
+    const result: DeleteResult = await this.friendshipRepository.delete({ fromId: from, toId: to });
+    if (result.affected == 0) {
+      throw new NotFoundException('해당 유저를 팔로우하고 있지 않습니다!');
     }
-    // await this.friendshipRepository.delete({ toId: id });
   }
 }

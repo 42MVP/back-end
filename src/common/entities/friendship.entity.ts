@@ -4,7 +4,6 @@ import {
   BeforeUpdate,
   Column,
   Entity,
-  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
   Unique,
@@ -30,10 +29,10 @@ export class Friendship extends BaseEntity {
   @Column({ type: 'number' })
   fromId: number;
 
-  @ManyToOne(() => User, user => user.friendships, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   from: User;
 
-  @ManyToOne(() => User, user => user.friendships, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   to: User;
 
   @BeforeInsert()

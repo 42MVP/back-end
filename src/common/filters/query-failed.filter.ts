@@ -15,6 +15,12 @@ export class QueryFailedErrorFilter implements ExceptionFilter {
           error: 'Conflict',
           statusCode: HttpStatus.CONFLICT,
         });
+      } else {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          message: 'DB 에러가 발생했습니다!',
+          error: 'Internal Server Error',
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        });
       }
     }
   }

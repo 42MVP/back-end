@@ -37,9 +37,6 @@ export class User extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   rating: number;
 
-  @OneToMany(() => Friendship, friendship => friendship.from, { cascade: true, lazy: true })
-  friendships: Promise<Friendship[]>;
-
   @OneToMany(() => GameHistory, gameHistory => gameHistory.winner, { cascade: true, lazy: true })
   gameHistories: Promise<GameHistory[]>;
 
