@@ -30,6 +30,7 @@ export class ChatService {
   ) {}
 
   async getChatRoomData(targetRoom: ChatRoom): Promise<ChatRoomData> {
+    // TODO: 아바타 정보도 추가하기
     const chatRoomData = {} as ChatRoomData;
     chatRoomData.isChannel = targetRoom.roomMode != 'DIRECT' ? true : false;
     chatRoomData.name = targetRoom.roomName;
@@ -47,6 +48,7 @@ export class ChatService {
   }
 
   async getChatRoomList(userName: string): Promise<ChatRoomData[]> {
+    // TODO: ChatRoomList에서 사용하는 데이터 타입을 DTO로 변경하기
     const targetUser = await this.userRepository.findOne({ where: { userName: userName } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
@@ -62,6 +64,7 @@ export class ChatService {
   }
 
   async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
+    // TODO: Protected 일때 비밀번호 검증하는 로직 추가
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
@@ -108,6 +111,7 @@ export class ChatService {
   }
 
   async findAllChannel() {
+    // TODO: FindAllChannel에서 사용하는 데이터 타입을 DTO로 변경하기
     const allChannel = await this.chatRoomRepository.find();
     const searchResult: ChannelSearchResult[] = [];
     for (let index = 0; index < allChannel.length; index++) {
@@ -175,6 +179,7 @@ export class ChatService {
       where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
+    // TODO: save 대신 update 사용을 고려해보기 (where?)
     Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
@@ -185,6 +190,7 @@ export class ChatService {
   }
 
   async changeChatUserStatus(changeChatUserInfo: UpdateChatUserDto) {
+    // TODO: kick, ban 경우 변경하고 내보내기
     if (await this.isChannelDm(changeChatUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }

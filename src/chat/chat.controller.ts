@@ -25,10 +25,9 @@ export class ChatController {
     return this.chatService.createChatRoom(newRoomInfo);
   }
 
-  // doxygen 작성!! 제발!@
+  // TODO: doxygen 작성하기
   @Post('enter-room')
   enterChatRoom(@Body() newChatUser: CreateChatUserDto) {
-    // 있는 채팅방 들어감
     return this.chatService.enterChatRoom(newChatUser);
   }
 

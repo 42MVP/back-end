@@ -20,6 +20,7 @@ export class ChatGateway {
     userId++;
   }
 
+  // TODO: mute 판별 로직을 추가하기
   @SubscribeMessage('send-message')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
     const roomName: string = message.roomId.toString();
@@ -27,6 +28,7 @@ export class ChatGateway {
     return;
   }
 
+  // TODO: join, leave 이벤트 전송시 필요한 데이터가 더 있는지 확인하기
   joinChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
