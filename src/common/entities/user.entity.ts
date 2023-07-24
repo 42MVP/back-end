@@ -1,7 +1,6 @@
 import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from '../enums';
 import { FtProfile } from 'src/common/types/ftProfile';
-import { Friendship } from './friendship.entity';
 import { GameHistory } from './game-history.entity';
 import { UserAchievement } from './user-achievement.entity';
 

@@ -4,7 +4,9 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  Index,
   ManyToOne,
+  PrimaryColumn,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
@@ -12,7 +14,7 @@ import { User } from './user.entity';
 import { BadRequestException } from '@nestjs/common';
 
 @Entity()
-@Unique(['toId', 'fromId'])
+@Index(['toId', 'fromId'], { unique: true })
 export class Friendship extends BaseEntity {
   constructor(from: number, to: number) {
     super();
