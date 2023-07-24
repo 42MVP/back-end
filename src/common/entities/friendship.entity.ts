@@ -1,8 +1,19 @@
-import { BaseEntity, BeforeInsert, BeforeUpdate, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BaseEntity,
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  Index,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from 'typeorm';
 import { User } from './user.entity';
 import { BadRequestException } from '@nestjs/common';
 
 @Entity()
+@Unique(['toId', 'fromId'])
 export class Friendship extends BaseEntity {
   constructor(from: number, to: number) {
     super();

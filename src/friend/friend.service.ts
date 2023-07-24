@@ -56,4 +56,12 @@ export class FriendService {
     }
     await this.friendshipRepository.save(new Friendship(from, to));
   }
+
+  async removeFriendList(from: number, to: number): Promise<void> {
+    const toUser = await this.userService.findOneById(to);
+    if (!toUser) {
+      throw new NotFoundException('팔로우할 유저가 존재하지 않습니다!');
+    }
+    // await this.friendshipRepository.delete({ toId: id });
+  }
 }
