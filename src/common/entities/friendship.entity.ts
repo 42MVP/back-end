@@ -4,6 +4,12 @@ import { BadRequestException } from '@nestjs/common';
 
 @Entity()
 export class Friendship extends BaseEntity {
+  constructor(from: number, to: number) {
+    super();
+    this.fromId = from;
+    this.toId = to;
+  }
+
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -22,7 +28,7 @@ export class Friendship extends BaseEntity {
   @BeforeInsert()
   @BeforeUpdate()
   checkFieldValues() {
-    if (this.from.id === this.to.id) {
+    if (this.fromId === this.toId) {
       throw new BadRequestException('자기 자신을 친구로 등록할 수 없습니다!');
     }
   }
