@@ -7,6 +7,8 @@ export class CreateChatUserDto {
   @IsNumber()
   roomId: number;
 
+  roomPassword: string;
+
   @IsNotEmpty()
   @IsNumber()
   userId: number;

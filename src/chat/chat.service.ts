@@ -90,12 +90,15 @@ export class ChatService {
   }
 
   async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
-    // TODO: Protected 일때 비밀번호 검증하는 로직 추가
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
     if (isExistUser && isExistUser.status == ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
+    }
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: newChatUser.roomId } });
+    if (targetRoom.roomMode == ChatRoomMode.PROTECTED && targetRoom.password != newChatUser.roomPassword) {
+      throw new BadRequestException('Wrong Password');
     }
     const createdUser = await this.chatUserRepository.save(newChatUser.toChatUserEntity());
     const userSocketId = this.userSocketRepository.find(createdUser.userId);
