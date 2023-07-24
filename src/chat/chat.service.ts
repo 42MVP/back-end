@@ -5,7 +5,6 @@ import { ChatRoom } from '../database/entities/chatroom.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
-import { ChannelSearchResult } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
@@ -17,6 +16,7 @@ import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
+import { ChatSearchResultDto } from './dto/response/chat-search-result.dto';
 
 @Injectable()
 export class ChatService {
@@ -137,16 +137,14 @@ export class ChatService {
   }
 
   async findAllChannel() {
-    // TODO: FindAllChannel에서 사용하는 데이터 타입을 DTO로 변경하기
     const allChannel = await this.chatRoomRepository.find();
-    const searchResult: ChannelSearchResult[] = [];
+    const searchResult: ChatSearchResultDto[] = [];
     for (let index = 0; index < allChannel.length; index++) {
-      const element = allChannel[index];
-      const singleChannel = {} as ChannelSearchResult;
-      singleChannel.id = element.id;
-      singleChannel.name = element.roomName;
-      singleChannel.hasPassword = element.password ? true : false;
-      searchResult.push(singleChannel);
+      const chat = allChannel[index];
+      if (chat.roomMode != ChatRoomMode.DIRECT && chat.roomMode != ChatRoomMode.PRIVATE) {
+        const chatSearchDto = new ChatSearchResultDto(chat.id, chat.roomName, chat.password ? true : false);
+        searchResult.push(chatSearchDto);
+      }
     }
     return searchResult;
   }
