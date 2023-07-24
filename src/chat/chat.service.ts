@@ -5,7 +5,7 @@ import { ChatRoom } from '../database/entities/chatroom.entity';
 import { ChatUser } from '../database/entities/chatuser.entity';
 import { User } from '../database/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
-import { ChatRoomData, ChannelSearchResult } from '../chat/chat-res.interface';
+import { ChannelSearchResult } from '../chat/chat-res.interface';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
@@ -15,6 +15,8 @@ import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
+import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
+import { ChatUserDto } from './dto/response/chat-user.dto';
 
 @Injectable()
 export class ChatService {
@@ -29,38 +31,62 @@ export class ChatService {
     private chatGateway: ChatGateway,
   ) {}
 
-  async getChatRoomData(targetRoom: ChatRoom): Promise<ChatRoomData> {
-    // TODO: 아바타 정보도 추가하기
-    const chatRoomData = {} as ChatRoomData;
-    chatRoomData.isChannel = targetRoom.roomMode != 'DIRECT' ? true : false;
-    chatRoomData.name = targetRoom.roomName;
-    chatRoomData.hasPassword = targetRoom.password == '' ? false : true;
-    chatRoomData.users = await this.chatUserRepository.find({
-      where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
-    });
-    chatRoomData.banUsers = await this.chatUserRepository.find({
-      where: { roomId: targetRoom.id, status: ChatUserStatus.BAN },
-    });
-    chatRoomData.abong = await this.chatUserRepository.find({
-      where: { roomId: targetRoom.id, status: ChatUserStatus.MUTE },
-    });
+  async extractChatUserDto(chatUsers: ChatUser[]): Promise<ChatUserDto[]> {
+    const chatUserDtoList: ChatUserDto[] = [];
+    for (let index = 0; index < chatUsers.length; index++) {
+      const chatUserData = chatUsers[index];
+      const userData = await this.userRepository.findOne({ where: { id: chatUserData.userId } });
+      const chatUserDto = new ChatUserDto(
+        userData.id,
+        userData.userName,
+        // TODO: 임시로 작성한 avatarUrl 차후 수정
+        '',
+        chatUserData.role,
+        chatUserData.muteTime,
+      );
+      chatUserDtoList.push(chatUserDto);
+    }
+    return chatUserDtoList;
+  }
+
+  async extractChatRoomDataDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
+    const chatRoomData = new ChatRoomDataDto(
+      targetRoom.id,
+      targetRoom.roomMode != 'DIRECT' ? true : false,
+      targetRoom.roomName,
+      targetRoom.password == null ? false : true,
+      await this.extractChatUserDto(
+        await this.chatUserRepository.find({
+          where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
+        }),
+      ),
+      await this.extractChatUserDto(
+        await this.chatUserRepository.find({
+          where: { roomId: targetRoom.id, status: ChatUserStatus.BAN },
+        }),
+      ),
+      await this.extractChatUserDto(
+        await this.chatUserRepository.find({
+          where: { roomId: targetRoom.id, status: ChatUserStatus.MUTE },
+        }),
+      ),
+    );
     return chatRoomData;
   }
 
-  async getChatRoomList(userName: string): Promise<ChatRoomData[]> {
-    // TODO: ChatRoomList에서 사용하는 데이터 타입을 DTO로 변경하기
+  async getChatRoomList(userName: string): Promise<ChatRoomDataDto[]> {
     const targetUser = await this.userRepository.findOne({ where: { userName: userName } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
     }
     const chatUsers = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
-    const chatRoomList: ChatRoomData[] = [];
+    const chatRoomDataDtoList: ChatRoomDataDto[] = [];
     for (let index = 0; index < chatUsers.length; index++) {
-      const element = chatUsers[index];
-      const singleRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: element.roomId } });
-      chatRoomList.push(await this.getChatRoomData(singleRoom));
+      const chatUser = chatUsers[index];
+      const chatRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } });
+      chatRoomDataDtoList.push(await this.extractChatRoomDataDto(chatRoom));
     }
-    return chatRoomList;
+    return chatRoomDataDtoList;
   }
 
   async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
