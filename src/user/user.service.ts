@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../common/entities/user.entity';
 import { Repository, UpdateResult } from 'typeorm';
 import { GameHistoryService } from 'src/game-history/game-history.service';
+import { UserAchievementService } from 'src/user-achievement/user-achievement.service';
+import { Achievement } from 'src/user-achievement/achievement';
 
 @Injectable()
 export class UserService {
@@ -11,6 +13,7 @@ export class UserService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private gameHistoryService: GameHistoryService,
+    private userAchievementService: UserAchievementService,
   ) {}
 
   async create(user: User): Promise<User> {
@@ -39,6 +42,8 @@ export class UserService {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
     user.gameHistories = await this.gameHistoryService.getGameHistry(id);
+    // ToDo: achievement refactoring
+    user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(id));
     return user;
   }
 
@@ -68,8 +73,8 @@ export class UserService {
           isAuth: updateUserDto.isAuth,
         },
       )
-      .catch(e => {
-        throw new BadRequestException('중복된 닉네임 입니다!');
+      .catch(() => {
+        throw new ConflictException('중복된 닉네임 입니다!');
       });
     if (result.affected == 0) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');

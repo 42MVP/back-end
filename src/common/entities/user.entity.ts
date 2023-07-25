@@ -1,8 +1,8 @@
-import { BaseEntity, Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from '../enums';
 import { FtProfile } from 'src/common/types/ftProfile';
 import { GameHistory } from './game-history.entity';
-import { UserAchievement } from './user-achievement.entity';
+import { Achievement } from '../../user-achievement/achievement';
 
 @Entity()
 export class User extends BaseEntity {
@@ -36,13 +36,9 @@ export class User extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   rating: number;
 
-  // @OneToMany(() => GameHistory, gameHistory => gameHistory.winner, { cascade: true, lazy: true })
-  // gameHistories: Promise<GameHistory[]>;
-
   gameHistories: GameHistory[];
 
-  @OneToMany(() => UserAchievement, userAchievement => userAchievement.user, { cascade: true, lazy: true })
-  userAchievement: Promise<UserAchievement[]>;
+  achievements: Achievement[];
 
   status: UserStatus;
 

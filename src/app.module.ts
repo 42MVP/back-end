@@ -10,6 +10,7 @@ import { LoginModule } from './login/login.module';
 import { FriendModule } from './friend/friend.module';
 import { BlockModule } from './block/block.module';
 import { GameHistoryModule } from './game-history/game-history.module';
+import { UserAchievementModule } from './user-achievement/user-achievement.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { GameHistoryModule } from './game-history/game-history.module';
     FriendModule,
     BlockModule,
     GameHistoryModule,
+    UserAchievementModule,
   ],
   controllers: [AppController],
   providers: [AppService],
