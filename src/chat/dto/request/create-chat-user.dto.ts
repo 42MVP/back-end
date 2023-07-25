@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ChatRole, ChatUserStatus } from '../../../database/entities/enums';
 import { ChatUser } from '../../../database/entities/chatuser.entity';
+import { Type } from 'class-transformer';
 
 export class CreateChatUserDto {
   @IsNotEmpty()
@@ -19,6 +20,7 @@ export class CreateChatUserDto {
   @IsNotEmpty()
   role: ChatRole;
 
+  @Type(() => Date)
   muteTime: Date;
 
   public toChatUserEntity() {

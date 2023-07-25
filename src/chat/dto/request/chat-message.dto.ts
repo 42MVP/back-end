@@ -6,6 +6,10 @@ export class ChatMessageDto {
   roomId: number;
 
   @IsNotEmpty()
+  @IsNumber()
+  userId: number;
+
+  @IsNotEmpty()
   userName: string;
 
   message: string;

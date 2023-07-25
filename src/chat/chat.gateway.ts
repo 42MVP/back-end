@@ -5,11 +5,15 @@ import { ChatUserStatus } from '../database/entities/enums';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
+import { MuteTimeRepository } from 'src/repository/mute-time.repository';
 
 let userId = 1;
 @WebSocketGateway()
 export class ChatGateway {
-  constructor(private readonly userSocketRepository: UserSocketRepository) {}
+  constructor(
+    private readonly userSocketRepository: UserSocketRepository,
+    private readonly muteTimeRepository: MuteTimeRepository,
+  ) {}
   @WebSocketServer()
   server: Server;
 
@@ -20,9 +24,23 @@ export class ChatGateway {
     userId++;
   }
 
-  // TODO: mute 판별 로직을 추가하기
+  isUserMuted(userId: number): boolean {
+    const userMuteTime: Date | undefined = this.muteTimeRepository.find(userId);
+    if (userMuteTime == undefined) {
+      return false;
+    }
+    const timeOfNow: Date = new Date();
+    if (userMuteTime >= timeOfNow) {
+      return true;
+    } else {
+      this.muteTimeRepository.delete(userId);
+      return false;
+    }
+  }
+
   @SubscribeMessage('send-message')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
+    if (this.isUserMuted(message.userId) == true) return;
     const roomName: string = message.roomId.toString();
     this.server.to(roomName).emit('receive-message', message);
     return;
