@@ -216,30 +216,34 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserStatus(changeChatUserInfo: UpdateChatUserDto) {
-    // TODO: kick, ban 경우 변경하고 내보내기
-    if (await this.isChannelDm(changeChatUserInfo.roomId)) {
+  async changeChatUserStatus(changedUserInfo: UpdateChatUserDto) {
+    if (await this.isChannelDm(changedUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.execUserId },
+      where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.execUserId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
+      where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    if (changeChatUserInfo.status == ChatUserStatus.MUTE && !changeChatUserInfo.muteTime) {
+    if (changedUserInfo.status == ChatUserStatus.MUTE && !changedUserInfo.muteTime) {
       throw new BadRequestException('Need limited mute time');
     }
-    if (changeChatUserInfo.status != ChatUserStatus.MUTE && targetUser.muteTime) {
-      changeChatUserInfo.muteTime = null;
+    if (changedUserInfo.status != ChatUserStatus.MUTE && targetUser.muteTime) {
+      changedUserInfo.muteTime = null;
     }
-    Object.assign(targetUser, changeChatUserInfo);
-    await this.chatUserRepository.save(targetUser);
     const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
     changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
-    changedStatus.status = targetUser.status;
-    this.chatGateway.sendChangedUserStatus(changedStatus, targetUser.roomId);
+    changedStatus.status = changedUserInfo.status;
+    const userSocket = this.userSocketRepository.find(changedUserInfo.userId);
+    if (changedUserInfo.status == ChatUserStatus.KICK) {
+      await this.chatUserRepository.remove(targetUser);
+    } else {
+      Object.assign(targetUser, changedUserInfo);
+      await this.chatUserRepository.save(targetUser);
+    }
+    this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, changedUserInfo.roomId);
     return;
   }
 

@@ -28,7 +28,6 @@ export class ChatGateway {
     return;
   }
 
-  // TODO: join, leave 이벤트 전송시 필요한 데이터가 더 있는지 확인하기
   joinChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
@@ -49,13 +48,15 @@ export class ChatGateway {
     return;
   }
 
-  sendChangedUserStatus(newStatus: ChangedUserStatusDto, roomId: number): void {
+  sendChangedUserStatus(userSocket: string, newStatus: ChangedUserStatusDto, roomId: number): void {
     const roomName: string = roomId.toString();
     switch (newStatus.status) {
       case ChatUserStatus.BAN:
+        this.server.to(userSocket).socketsLeave(roomName);
         this.server.to(roomName).emit('ban', newStatus);
         break;
       case ChatUserStatus.KICK:
+        this.server.to(userSocket).socketsLeave(roomName);
         this.server.to(roomName).emit('kick', newStatus);
         break;
       case ChatUserStatus.MUTE:
