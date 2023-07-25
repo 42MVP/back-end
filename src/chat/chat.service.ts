@@ -17,7 +17,7 @@ import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatSearchResultDto } from './dto/response/chat-search-result.dto';
-import { MuteTimeRepository } from 'src/repository/mute-time.repository';
+import { MuteTimeRepository } from '../repository/mute-time.repository';
 
 @Injectable()
 export class ChatService {

@@ -5,7 +5,7 @@ import { ChatUserStatus } from '../database/entities/enums';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
-import { MuteTimeRepository } from 'src/repository/mute-time.repository';
+import { MuteTimeRepository } from '../repository/mute-time.repository';
 
 let userId = 1;
 @WebSocketGateway()
