@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { LoginModule } from './login/login.module';
 import { FriendModule } from './friend/friend.module';
 import { BlockModule } from './block/block.module';
+import { GameHistoryModule } from './game-history/game-history.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { BlockModule } from './block/block.module';
     LoginModule,
     FriendModule,
     BlockModule,
+    GameHistoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

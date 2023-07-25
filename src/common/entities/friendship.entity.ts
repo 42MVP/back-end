@@ -23,10 +23,10 @@ export class Friendship extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'number' })
+  @Column({ type: 'int' })
   toId: number;
 
-  @Column({ type: 'number' })
+  @Column({ type: 'int' })
   fromId: number;
 
   @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })

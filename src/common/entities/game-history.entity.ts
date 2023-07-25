@@ -3,6 +3,14 @@ import { User } from './user.entity';
 
 @Entity()
 export class GameHistory extends BaseEntity {
+  constructor(winnerId: number, loserId: number, winnerScore: number, loserScore: number) {
+    super();
+    this.winnerId = winnerId;
+    this.loserId = loserId;
+    this.winnerScore = winnerScore;
+    this.loserScore = loserScore;
+  }
+
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -15,9 +23,15 @@ export class GameHistory extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   loserScore: number;
 
-  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE' })
-  winner: number;
+  @Column({ type: 'int' })
+  winnerId: number;
+
+  @Column({ type: 'int' })
+  loserId: number;
 
   @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE' })
-  loser: number;
+  winner: User;
+
+  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE' })
+  loser: User;
 }

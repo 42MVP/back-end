@@ -3,12 +3,14 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../common/entities/user.entity';
 import { Repository, UpdateResult } from 'typeorm';
+import { GameHistoryService } from 'src/game-history/game-history.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private gameHistoryService: GameHistoryService,
   ) {}
 
   async create(user: User): Promise<User> {
@@ -36,6 +38,7 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
+    user.gameHistories = await this.gameHistoryService.getGameHistry(id);
     return user;
   }
 
