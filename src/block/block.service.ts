@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Block } from 'src/common/entities/block.entity';
-import { User } from 'src/common/entities/user.entity';
-import { UserService } from 'src/user/user.service';
+import { Block } from '../common/entities/block.entity';
+import { User } from '../common/entities/user.entity';
+import { UserService } from '../user/user.service';
 import { DeleteResult, Repository } from 'typeorm';
 
 @Injectable()

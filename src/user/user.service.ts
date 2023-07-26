@@ -3,9 +3,9 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../common/entities/user.entity';
 import { Repository, UpdateResult } from 'typeorm';
-import { GameHistoryService } from 'src/game-history/game-history.service';
-import { UserAchievementService } from 'src/user-achievement/user-achievement.service';
-import { Achievement } from 'src/user-achievement/achievement';
+import { GameHistoryService } from '../game-history/game-history.service';
+import { UserAchievementService } from '../user-achievement/user-achievement.service';
+import { Achievement } from '../user-achievement/achievement';
 
 @Injectable()
 export class UserService {

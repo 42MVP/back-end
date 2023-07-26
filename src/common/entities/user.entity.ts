@@ -1,6 +1,6 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from '../enums';
-import { FtProfile } from 'src/common/types/ftProfile';
+import { FtProfile } from '../../common/types/ftProfile';
 import { GameHistory } from './game-history.entity';
 import { Achievement } from '../../user-achievement/achievement';
 

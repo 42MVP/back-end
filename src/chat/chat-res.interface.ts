@@ -1,4 +1,4 @@
-import { ChatUser } from 'src/database/entities/chatuser.entity';
+import { ChatUser } from '../database/entities/chatuser.entity';
 
 export interface ChatRoomData {
   isChannel: boolean;
