@@ -38,14 +38,7 @@ export class ChatService {
     for (let index = 0; index < chatUsers.length; index++) {
       const chatUserData = chatUsers[index];
       const userData = await this.userRepository.findOne({ where: { id: chatUserData.userId } });
-      const chatUserDto = new ChatUserDto(
-        userData.id,
-        userData.userName,
-        // TODO: 임시로 작성한 avatarUrl 차후 수정
-        '',
-        chatUserData.role,
-        chatUserData.muteTime,
-      );
+      const chatUserDto = new ChatUserDto(userData.id, userData.userName, '', chatUserData.role, chatUserData.muteTime);
       chatUserDtoList.push(chatUserDto);
     }
     return chatUserDtoList;
@@ -123,8 +116,6 @@ export class ChatService {
     return;
   }
 
-  // TODO: 반환값이 Entity인 경우를 제거하기
-  // TODO: 불필요한 DTO 삭제
   async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
     if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
@@ -144,7 +135,6 @@ export class ChatService {
   }
 
   async findAllChannel() {
-    // TODO: 이미 속한 채널은 빼야함.
     const allChannel = await this.chatRoomRepository.find();
     const searchResult: ChatSearchResultDto[] = [];
     for (let index = 0; index < allChannel.length; index++) {
@@ -211,7 +201,6 @@ export class ChatService {
       where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    // TODO: save 대신 update 사용을 고려해보기 (where?)
     Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
@@ -257,7 +246,6 @@ export class ChatService {
     const exitUser = await this.chatUserRepository.findOne({
       where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
     });
-    // TODO: 나가는 유저가 있는 유저인지 판별하기
     const userSocketId = this.userSocketRepository.find(exitInfo.userId);
     const userName = (await this.userRepository.findOne({ where: { id: exitUser.userId } })).userName;
     this.chatGateway.exitChatRoom(userSocketId, userName, exitInfo.roomId);

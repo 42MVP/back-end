@@ -46,7 +46,6 @@ export class ChatGateway {
     return;
   }
 
-  // TODO: invite, dm 유저 소켓 id 정보가 있는지 검증해야 함
   joinChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
