@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, Post, Delete, UseFilters, UseGuards } from '@nestjs/common';
 import { FriendService } from './friend.service';
-import { User } from 'src/common/entities/user.entity';
+import { User } from '../common/entities/user.entity';
 import { FollowDto } from './dto/follow.dto';
-import { QueryFailedErrorFilter } from 'src/common/filters/query-failed.filter';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
+import { QueryFailedErrorFilter } from '../common/filters/query-failed.filter';
+import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('friend')

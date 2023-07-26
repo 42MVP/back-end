@@ -3,8 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-42';
 import { ConfigService } from '@nestjs/config';
 import { FtProfile } from '../../common/types/ftProfile';
-import { UserService } from 'src/user/user.service';
-import { User } from 'src/common/entities/user.entity';
+import { UserService } from '../../user/user.service';
+import { User } from '../../common/entities/user.entity';
 
 @Injectable()
 export class FtAuthStrategy extends PassportStrategy(Strategy, 'ft-auth') {

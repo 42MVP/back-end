@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserAchievement } from 'src/common/entities/user-achievement.entity';
+import { UserAchievement } from '../common/entities/user-achievement.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()

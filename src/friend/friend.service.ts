@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/common/entities/user.entity';
+import { User } from '../common/entities/user.entity';
 import { DeleteResult, Repository } from 'typeorm';
-import { Friendship } from 'src/common/entities/friendship.entity';
-import { UserService } from 'src/user/user.service';
+import { Friendship } from '../common/entities/friendship.entity';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class FriendService {

@@ -1,7 +1,7 @@
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './user.entity';
 import { EAchievement } from '../enums';
-import { Achievement } from 'src/user-achievement/achievement';
+import { Achievement } from '../../user-achievement/achievement';
 
 @Entity()
 export class UserAchievement extends BaseEntity {

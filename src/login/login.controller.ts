@@ -1,14 +1,14 @@
 import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { LoginService } from './login.service';
-import { ExtractUser } from 'src/auth/decorators/extract-user.decorator';
-import { User } from 'src/common/entities/user.entity';
-import { AuthService } from 'src/auth/auth.service';
-import { FtAuthGuard } from 'src/auth/ft/ft-auth.guard';
-import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
-import { UserService } from 'src/user/user.service';
+import { ExtractUser } from '../auth/decorators/extract-user.decorator';
+import { User } from '../common/entities/user.entity';
+import { AuthService } from '../auth/auth.service';
+import { FtAuthGuard } from '../auth/ft/ft-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { UserService } from '../user/user.service';
 import { AuthCodeDto } from './dto/auth-code.dto';
-import { TwoFactorAuthGuard } from 'src/auth/two-factor/two-factor-auth.guard';
+import { TwoFactorAuthGuard } from '../auth/two-factor/two-factor-auth.guard';
 
 @Controller('login')
 export class LoginController {
