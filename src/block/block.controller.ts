@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseFilters, Delete } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseFilters, Delete, UseGuards } from '@nestjs/common';
 import { BlockService } from './block.service';
 import { User } from 'src/common/entities/user.entity';
 import { QueryFailedErrorFilter } from 'src/common/filters/query-failed.filter';
 import { BlockDto } from './dto/block.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('block')
 export class BlockController {
   constructor(private readonly blockService: BlockService) {}
