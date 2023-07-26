@@ -1,4 +1,5 @@
 import { TypeOrmModuleAsyncOptions, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 export const typeORMConfig: TypeOrmModuleAsyncOptions = {
   useFactory: async (): Promise<TypeOrmModuleOptions> => {
@@ -12,6 +13,7 @@ export const typeORMConfig: TypeOrmModuleAsyncOptions = {
       entities: [__dirname + '/../**/*.entity.{js,ts}'],
       synchronize: true,
       logging: true,
+      namingStrategy: new SnakeNamingStrategy(),
     };
   },
 };
