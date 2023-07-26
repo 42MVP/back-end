@@ -1,18 +1,21 @@
-import { IsNotEmpty } from 'class-validator';
-import { ChatRoomMode } from '../../../database/entities/enums';
-import { ChatRoom } from '../../../database/entities/chatroom.entity';
+import { IsNotEmpty, IsOptional } from 'class-validator';
+import { ChatRoom } from '../../../common/entities/chatroom.entity';
+import { ChatRoomMode } from '../../../common/enums';
 
 export class CreateChatRoomDto {
   @IsNotEmpty()
   userId: number;
 
+  @IsOptional()
   dmId: number;
 
+  @IsOptional()
   roomName: string;
 
   @IsNotEmpty()
   roomMode: ChatRoomMode;
 
+  @IsOptional()
   password: string;
 
   public toChatRoomEntity() {

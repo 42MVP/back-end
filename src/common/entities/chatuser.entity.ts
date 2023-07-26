@@ -1,7 +1,7 @@
 import { BaseEntity, Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { ChatRoom } from './chatroom.entity';
 import { User } from './user.entity';
-import { ChatRole, ChatUserStatus } from './enums';
+import { ChatRole, ChatUserStatus } from '../../common/enums';
 
 @Entity()
 export class ChatUser extends BaseEntity {

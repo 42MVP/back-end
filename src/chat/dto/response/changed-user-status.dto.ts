@@ -1,5 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
-import { ChatUserStatus } from '../../../database/entities/enums';
+import { ChatUserStatus } from '../../../common/enums';
 
 export class ChangedUserStatusDto {
   @IsNotEmpty()

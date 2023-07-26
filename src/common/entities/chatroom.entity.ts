@@ -1,5 +1,5 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { ChatRoomMode } from './enums';
+import { ChatRoomMode } from '../enums';
 
 @Entity()
 export class ChatRoom extends BaseEntity {

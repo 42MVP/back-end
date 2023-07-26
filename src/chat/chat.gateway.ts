@@ -1,7 +1,7 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatMessageDto } from './dto/request/chat-message.dto';
-import { ChatUserStatus } from '../database/entities/enums';
+import { ChatUserStatus } from '../common/enums';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';

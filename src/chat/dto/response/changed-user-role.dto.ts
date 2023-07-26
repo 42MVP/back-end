@@ -1,5 +1,5 @@
 import { IsNotEmpty } from 'class-validator';
-import { ChatRole } from '../../../database/entities/enums';
+import { ChatRole } from 'src/common/enums';
 
 export class ChangedUserRoleDto {
   @IsNotEmpty()

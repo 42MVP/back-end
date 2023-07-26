@@ -1,10 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ChatRoom } from '../database/entities/chatroom.entity';
-import { ChatUser } from '../database/entities/chatuser.entity';
-import { User } from '../database/entities/user.entity';
-import { ChatRole, ChatRoomMode, ChatUserStatus } from '../database/entities/enums';
+import { ChatRoom } from '../common/entities/chatroom.entity';
+import { ChatUser } from '../common/entities/chatuser.entity';
+import { User } from '../common/entities/user.entity';
+import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
@@ -103,6 +103,7 @@ export class ChatService {
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
+    console.log(`${roomId}, ${userId}`);
     const newChatOwner: CreateChatUserDto = new CreateChatUserDto();
     newChatOwner.roomId = roomId;
     newChatOwner.userId = userId;
@@ -111,12 +112,14 @@ export class ChatService {
     newChatOwner.muteTime = null;
     const createdOwner = await this.chatUserRepository.save(newChatOwner.toChatUserEntity());
     const userSocketId = this.userSocketRepository.find(userId);
+    console.log(userId);
     const ownerName = (await this.userRepository.findOne({ where: { id: createdOwner.userId } })).userName;
     this.chatGateway.joinChatRoom(userSocketId, ownerName, roomId);
     return;
   }
 
   async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
+    console.log(newRoomInfo.userId);
     if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
     } else {
