@@ -4,15 +4,15 @@ WORKDIR /app
 COPY package.json /app/package.json
 COPY package-lock.json /app/package-lock.json
 
-RUN yarn install --frozen-lockfile
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 
-CMD [ "yarn", "start:dev" ]
+CMD [ "npm", "run", "start:dev" ]
 
 FROM development AS build
 
-RUN yarn build
+RUN npm run build
 
 CMD [ "node", "./dist/main.js" ]
 
