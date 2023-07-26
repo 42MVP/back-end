@@ -16,7 +16,7 @@ export class MuteTimeRepository {
   }
 
   update(userId: userId, muteTime: muteTime): boolean {
-    if (this.muteTimeMap.get(userId) == undefined) {
+    if (this.muteTimeMap.get(userId) === undefined) {
       return false;
     } else {
       this.muteTimeMap.set(userId, muteTime);

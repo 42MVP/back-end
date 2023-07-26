@@ -26,7 +26,7 @@ export class ChatGateway {
 
   isUserMuted(userId: number): boolean {
     const userMuteTime: Date | undefined = this.muteTimeRepository.find(userId);
-    if (userMuteTime == undefined) {
+    if (typeof userMuteTime === undefined) {
       return false;
     }
     const timeOfNow: Date = new Date();
@@ -40,12 +40,13 @@ export class ChatGateway {
 
   @SubscribeMessage('send-message')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
-    if (this.isUserMuted(message.userId) == true) return;
+    if (this.isUserMuted(message.userId) === true) return;
     const roomName: string = message.roomId.toString();
     this.server.to(roomName).emit('receive-message', message);
     return;
   }
 
+  // TODO: invite, dm 유저 소켓 id 정보가 있는지 검증해야 함
   joinChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);

@@ -54,9 +54,9 @@ export class ChatService {
   async extractChatRoomDataDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
     const chatRoomData = new ChatRoomDataDto(
       targetRoom.id,
-      targetRoom.roomMode != 'DIRECT' ? true : false,
+      targetRoom.roomMode !== 'DIRECT' ? true : false,
       targetRoom.roomName,
-      targetRoom.password == null ? false : true,
+      targetRoom.password === null ? false : true,
       await this.extractChatUserDto(
         await this.chatUserRepository.find({
           where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
@@ -95,11 +95,11 @@ export class ChatService {
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
-    if (isExistUser && isExistUser.status == ChatUserStatus.BAN) {
+    if (isExistUser && isExistUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: newChatUser.roomId } });
-    if (targetRoom.roomMode == ChatRoomMode.PROTECTED && targetRoom.password != newChatUser.roomPassword) {
+    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== newChatUser.roomPassword) {
       throw new BadRequestException('Wrong Password');
     }
     const createdUser = await this.chatUserRepository.save(newChatUser.toChatUserEntity());
@@ -123,11 +123,13 @@ export class ChatService {
     return;
   }
 
+  // TODO: 반환값이 Entity인 경우를 제거하기
+  // TODO: 불필요한 DTO 삭제
   async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
-    if (newRoomInfo.roomMode == ChatRoomMode.PROTECTED) {
+    if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
     } else {
-      if (newRoomInfo.roomMode == ChatRoomMode.DIRECT) {
+      if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) {
         if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
         newRoomInfo.roomName = null;
       }
@@ -135,18 +137,19 @@ export class ChatService {
     }
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
     await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
-    if (newRoom.roomMode == ChatRoomMode.DIRECT) {
+    if (newRoom.roomMode === ChatRoomMode.DIRECT) {
       await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
     }
     return newRoom;
   }
 
   async findAllChannel() {
+    // TODO: 이미 속한 채널은 빼야함.
     const allChannel = await this.chatRoomRepository.find();
     const searchResult: ChatSearchResultDto[] = [];
     for (let index = 0; index < allChannel.length; index++) {
       const chat = allChannel[index];
-      if (chat.roomMode != ChatRoomMode.DIRECT && chat.roomMode != ChatRoomMode.PRIVATE) {
+      if (chat.roomMode !== ChatRoomMode.DIRECT && chat.roomMode !== ChatRoomMode.PRIVATE) {
         const chatSearchDto = new ChatSearchResultDto(chat.id, chat.roomName, chat.password ? true : false);
         searchResult.push(chatSearchDto);
       }
@@ -156,7 +159,7 @@ export class ChatService {
 
   async isChannelDm(roomId: number) {
     const targetChannel = await this.chatRoomRepository.findOne({ where: { id: roomId } });
-    return targetChannel.roomMode == ChatRoomMode.DIRECT ? true : false;
+    return targetChannel.roomMode === ChatRoomMode.DIRECT ? true : false;
   }
 
   async changeChatRoomInfo(changeInfo: UpdateChatRoomDto) {
@@ -169,15 +172,15 @@ export class ChatService {
     if (!execUser) {
       throw new NotFoundException('No Such UserId or RoomId');
     }
-    if (execUser.role != ChatRole.OWNER) {
+    if (execUser.role !== ChatRole.OWNER) {
       throw new BadRequestException('Permission Denied');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeInfo.roomId } });
     changeInfo.roomName = targetRoom.roomName;
-    if (changeInfo.roomMode == ChatRoomMode.PROTECTED && changeInfo.password == null) {
+    if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
       throw new BadRequestException('Need a password for protected room');
     }
-    if (changeInfo.roomMode != ChatRoomMode.PROTECTED) {
+    if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
       changeInfo.password = null;
     }
     Object.assign(targetRoom, changeInfo.toChatRoomEntity());
@@ -188,10 +191,10 @@ export class ChatService {
     if (!execUser || !targetUser) {
       throw new NotFoundException('No Such User');
     }
-    if (execUser.role == ChatRole.USER) {
+    if (execUser.role === ChatRole.USER) {
       throw new BadRequestException('Permission Denied');
     }
-    if (targetUser.role == ChatRole.OWNER) {
+    if (targetUser.role === ChatRole.OWNER) {
       throw new BadRequestException('Invalid Role to Change');
     }
     return;
@@ -229,18 +232,18 @@ export class ChatService {
       where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    if (changedUserInfo.status == ChatUserStatus.MUTE) {
+    if (changedUserInfo.status === ChatUserStatus.MUTE) {
       if (!changedUserInfo.muteTime) throw new BadRequestException('Need limited mute time');
       this.muteTimeRepository.save(changedUserInfo.userId, changedUserInfo.muteTime);
     }
-    if (changedUserInfo.status != ChatUserStatus.MUTE && targetUser.muteTime) {
+    if (changedUserInfo.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
       changedUserInfo.muteTime = null;
     }
     const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
     changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
     changedStatus.status = changedUserInfo.status;
     const userSocket = this.userSocketRepository.find(changedUserInfo.userId);
-    if (changedUserInfo.status == ChatUserStatus.KICK) {
+    if (changedUserInfo.status === ChatUserStatus.KICK) {
       await this.chatUserRepository.remove(targetUser);
     } else {
       Object.assign(targetUser, changedUserInfo);
@@ -254,10 +257,11 @@ export class ChatService {
     const exitUser = await this.chatUserRepository.findOne({
       where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
     });
+    // TODO: 나가는 유저가 있는 유저인지 판별하기
     const userSocketId = this.userSocketRepository.find(exitInfo.userId);
     const userName = (await this.userRepository.findOne({ where: { id: exitUser.userId } })).userName;
     this.chatGateway.exitChatRoom(userSocketId, userName, exitInfo.roomId);
-    if (exitUser.role != ChatRole.OWNER) {
+    if (exitUser.role !== ChatRole.OWNER) {
       return await this.chatUserRepository.remove(exitUser);
     } else {
       const exitRoom = await this.chatRoomRepository.findOne({ where: { id: exitInfo.roomId } });

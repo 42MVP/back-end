@@ -17,7 +17,7 @@ export class UserSocketRepository {
   }
 
   update(userId: userId, socketId: socketId): boolean {
-    if (this.userSocketMap.get(userId) == undefined) {
+    if (this.userSocketMap.get(userId) === undefined) {
       return false;
     } else {
       this.userSocketMap.set(userId, socketId);

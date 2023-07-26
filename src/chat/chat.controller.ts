@@ -25,7 +25,7 @@ export class ChatController {
     return this.chatService.createChatRoom(newRoomInfo);
   }
 
-  // TODO: doxygen 작성하기
+  // TODO: enum에 이상한거 들어오는지 가드 하기
   @Post('enter-room')
   enterChatRoom(@Body() newChatUser: CreateChatUserDto) {
     return this.chatService.enterChatRoom(newChatUser);
