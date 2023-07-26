@@ -41,7 +41,10 @@ export class LoginController {
       } else {
         const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
-        res.cookie('access-token', jwtToken.accessToken).cookie('refresh-token', jwtToken.refreshToken).redirect('/');
+        res
+          .cookie('access-token', jwtToken.accessToken)
+          .cookie('refresh-token', jwtToken.refreshToken)
+          .redirect('http://localhost:5173/signin/oauth');
       }
     } else {
       const registedUserId = await this.loginService.register(user);
@@ -50,7 +53,7 @@ export class LoginController {
       res
         .cookie('access-token', jwtToken.accessToken)
         .cookie('refresh-token', jwtToken.refreshToken)
-        .redirect('/register');
+        .redirect('http://localhost:5173/siginup/setprofile');
     }
   }
 
