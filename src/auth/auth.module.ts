@@ -9,6 +9,8 @@ import { mailerConfig } from '../configs/mailer.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { cacheConfig } from '../configs/cache.config';
 import { TwoFactorAuthStrategy } from './two-factor/two-factor-auth.strategy';
+import { AuthController } from './auth.controller';
+import { JwtRefreshStrategy } from './jwt/jwt-refresh.strategy';
 
 @Module({
   imports: [
@@ -17,7 +19,8 @@ import { TwoFactorAuthStrategy } from './two-factor/two-factor-auth.strategy';
     MailerModule.forRootAsync(mailerConfig),
     CacheModule.registerAsync(cacheConfig),
   ],
-  providers: [AuthService, FtAuthStrategy, JwtAuthStrategy, TwoFactorAuthStrategy],
+  providers: [AuthService, FtAuthStrategy, JwtAuthStrategy, TwoFactorAuthStrategy, JwtRefreshStrategy],
   exports: [AuthService],
+  controllers: [AuthController],
 })
 export class AuthModule {}

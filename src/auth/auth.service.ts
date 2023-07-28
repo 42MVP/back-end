@@ -20,7 +20,7 @@ export class AuthService {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  private async getJwtAccessToken(id: number): Promise<string> {
+  async getJwtAccessToken(id: number): Promise<string> {
     const payload = { sub: id };
     const signOptions = {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
@@ -29,7 +29,7 @@ export class AuthService {
     return await this.jwtService.signAsync(payload, signOptions);
   }
 
-  private async getJwtRefreshToken(id: number): Promise<string> {
+  async getJwtRefreshToken(id: number): Promise<string> {
     const payload = { sub: id };
     const signOptions = {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),

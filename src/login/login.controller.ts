@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 import { LoginService } from './login.service';
-import { ExtractUser } from '../auth/decorators/extract-user.decorator';
+import { ExtractUser } from '../common/decorators/extract-user.decorator';
 import { User } from '../common/entities/user.entity';
 import { AuthService } from '../auth/auth.service';
 import { FtAuthGuard } from '../auth/ft/ft-auth.guard';
