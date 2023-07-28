@@ -21,7 +21,6 @@ export class Achievement {
 
     for (const ua of userAchievements) {
       const a: Achievement = ua.toAchievement();
-      console.log(a.name);
       result.push(a);
     }
 

@@ -95,4 +95,16 @@ export class AuthService {
     }
     await this.cacheManager.del(id);
   }
+
+  async jwtVerify(token: string): Promise<number> {
+    try {
+      const verifyOptions = {
+        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+      };
+      return (await this.jwtService.verifyAsync(token, verifyOptions)).sub;
+    } catch (e) {
+      console.error(e);
+      throw new UnauthorizedException('JWT 인증 실패');
+    }
+  }
 }

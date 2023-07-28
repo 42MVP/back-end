@@ -7,7 +7,6 @@ import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
 
-let userId = 1;
 @WebSocketGateway()
 export class ChatGateway {
   constructor(
@@ -17,12 +16,12 @@ export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  // 테스트용 connection 함수: 실제 구동에는 사용하지 않습니다.
-  handleConnection(@ConnectedSocket() client: Socket) {
-    console.log(`${userId}: socketid [${client.id}]`);
-    this.userSocketRepository.save(userId, client.id);
-    userId++;
-  }
+  // // 테스트용 connection 함수: 실제 구동에는 사용하지 않습니다.
+  // handleConnection(@ConnectedSocket() client: Socket) {
+  //   console.log(`${userId}: socketid [${client.id}]`);
+  //   this.userSocketRepository.save(userId, client.id);
+  //   userId++;
+  // }
 
   isUserMuted(userId: number): boolean {
     const userMuteTime: Date | undefined = this.muteTimeRepository.find(userId);

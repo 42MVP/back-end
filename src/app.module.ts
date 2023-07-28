@@ -12,6 +12,8 @@ import { FriendModule } from './friend/friend.module';
 import { BlockModule } from './block/block.module';
 import { GameHistoryModule } from './game-history/game-history.module';
 import { UserAchievementModule } from './user-achievement/user-achievement.module';
+import { ConnectionModule } from './connection/connection.module';
+import { RepositoryModule } from './repository/repository.module';
 
 @Module({
   imports: [
@@ -28,6 +30,9 @@ import { UserAchievementModule } from './user-achievement/user-achievement.modul
     BlockModule,
     GameHistoryModule,
     UserAchievementModule,
+    ConnectionModule,
+    ChatModule,
+    RepositoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
