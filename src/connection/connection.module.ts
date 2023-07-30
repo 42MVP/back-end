@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ConnectionService } from './connection.service';
 import { ConnectionGateway } from './connection.gateway';
 import { RepositoryModule } from 'src/repository/repository.module';
