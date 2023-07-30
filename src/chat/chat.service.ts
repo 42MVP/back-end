@@ -69,8 +69,8 @@ export class ChatService {
     return chatRoomData;
   }
 
-  async getChatRoomList(userName: string): Promise<ChatRoomDataDto[]> {
-    const targetUser = await this.userRepository.findOne({ where: { userName: userName } });
+  async getChatRoomList(userId: number): Promise<ChatRoomDataDto[]> {
+    const targetUser = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
     }
@@ -84,7 +84,7 @@ export class ChatService {
     return chatRoomDataDtoList;
   }
 
-  async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
+  async enterChatRoom(userId: number, newChatUser: CreateChatUserDto): Promise<ChatUser> {
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
@@ -118,7 +118,7 @@ export class ChatService {
     return;
   }
 
-  async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
+  async createChatRoom(userId: number, newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
     console.log(newRoomInfo.userId);
     if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
@@ -155,7 +155,7 @@ export class ChatService {
     return targetChannel.roomMode === ChatRoomMode.DIRECT ? true : false;
   }
 
-  async changeChatRoomInfo(changeInfo: UpdateChatRoomDto) {
+  async changeChatRoomInfo(userId: number, changeInfo: UpdateChatRoomDto) {
     if (await this.isChannelDm(changeInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -193,7 +193,7 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserRole(changeChatUserInfo: UpdateChatUserDto) {
+  async changeChatUserRole(userId: number, changeChatUserInfo: UpdateChatUserDto) {
     if (await this.isChannelDm(changeChatUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -213,7 +213,7 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserStatus(changedUserInfo: UpdateChatUserDto) {
+  async changeChatUserStatus(userId: number, changedUserInfo: UpdateChatUserDto) {
     if (await this.isChannelDm(changedUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -245,7 +245,7 @@ export class ChatService {
     return;
   }
 
-  async exitChatRoom(exitInfo: ExitChatRoomDto) {
+  async exitChatRoom(userId: number, exitInfo: ExitChatRoomDto) {
     const exitUser = await this.chatUserRepository.findOne({
       where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
     });

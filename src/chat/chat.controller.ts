@@ -1,57 +1,61 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
+import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
+import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 
 @Controller('chat')
+@UseGuards(JwtAuthGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
   @Get('search')
-  findAllChannel() {
+  findAllChannel(@ExtractId() userId: number) {
+    console.log(userId);
     return this.chatService.findAllChannel();
   }
 
-  @Get(':id')
-  getChatRoomList(@Param('id') id: string) {
-    return this.chatService.getChatRoomList(id);
+  @Get(':user-name')
+  getChatRoomList(@ExtractId() userId: number) {
+    return this.chatService.getChatRoomList(userId);
   }
 
   @Post('create-room')
-  createChatRoom(@Body() newRoomInfo: CreateChatRoomDto) {
-    return this.chatService.createChatRoom(newRoomInfo);
+  createChatRoom(@ExtractId() userId: number, @Body() newRoomInfo: CreateChatRoomDto) {
+    return this.chatService.createChatRoom(userId, newRoomInfo);
   }
 
   @Post('enter-room')
-  enterChatRoom(@Body() newChatUser: CreateChatUserDto) {
-    return this.chatService.enterChatRoom(newChatUser);
+  enterChatRoom(@ExtractId() userId: number, @Body() newChatUser: CreateChatUserDto) {
+    return this.chatService.enterChatRoom(userId, newChatUser);
   }
 
   @Post('invite')
-  inviteChatUser(@Body() invitedChatUser: CreateChatUserDto) {
-    return this.chatService.enterChatRoom(invitedChatUser);
+  inviteChatUser(@ExtractId() userId: number, @Body() invitedChatUser: CreateChatUserDto) {
+    return this.chatService.enterChatRoom(userId, invitedChatUser);
   }
 
   @Patch('change-room-info')
-  changeChatRoomInfo(@Body() changeInfo: UpdateChatRoomDto) {
-    return this.chatService.changeChatRoomInfo(changeInfo);
+  changeChatRoomInfo(@ExtractId() userId: number, @Body() changeInfo: UpdateChatRoomDto) {
+    return this.chatService.changeChatRoomInfo(userId, changeInfo);
   }
 
   @Patch('change-role')
-  changeChatUserRole(@Body() changeChatUserInfo: UpdateChatUserDto) {
-    return this.chatService.changeChatUserRole(changeChatUserInfo);
+  changeChatUserRole(@ExtractId() userId: number, @Body() changeChatUserInfo: UpdateChatUserDto) {
+    return this.chatService.changeChatUserRole(userId, changeChatUserInfo);
   }
 
   @Patch('change-status')
-  changeChatUserStatus(@Body() changeChatUserInfo: UpdateChatUserDto) {
-    return this.chatService.changeChatUserStatus(changeChatUserInfo);
+  changeChatUserStatus(@ExtractId() userId: number, @Body() changeChatUserInfo: UpdateChatUserDto) {
+    return this.chatService.changeChatUserStatus(userId, changeChatUserInfo);
   }
 
   @Delete('exit-room')
-  exitChatRoom(@Body() exitInfo: ExitChatRoomDto) {
-    return this.chatService.exitChatRoom(exitInfo);
+  exitChatRoom(@ExtractId() userId: number, @Body() exitInfo: ExitChatRoomDto) {
+    return this.chatService.exitChatRoom(userId, exitInfo);
   }
 }
