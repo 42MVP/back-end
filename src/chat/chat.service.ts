@@ -8,16 +8,16 @@ import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
-import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
+import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
-import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
+import { ChatRoomListDto } from './dto/response/chat-room-list.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
-import { ChatSearchResultDto } from './dto/response/chat-search-result.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
+import { ChatRoomDto } from './dto/response/chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -33,58 +33,54 @@ export class ChatService {
     private chatGateway: ChatGateway,
   ) {}
 
-  async extractChatUserDto(chatUsers: ChatUser[]): Promise<ChatUserDto[]> {
-    const chatUserDtoList: ChatUserDto[] = [];
-    for (let index = 0; index < chatUsers.length; index++) {
-      const chatUserData = chatUsers[index];
-      const userData = await this.userRepository.findOne({ where: { id: chatUserData.userId } });
-      const chatUserDto = new ChatUserDto(userData.id, userData.userName, '', chatUserData.role, chatUserData.muteTime);
-      chatUserDtoList.push(chatUserDto);
-    }
-    return chatUserDtoList;
+  async getChatUserDto(chatUser: ChatUser): Promise<ChatUserDto> {
+    const user: User = await this.userRepository.findOne({ where: { id: chatUser.userId } });
+    return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
   }
 
-  async extractChatRoomDataDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
-    const chatRoomData = new ChatRoomDataDto(
+  async getChatUserList(roomId: number, commonStatus: ChatUserStatus): Promise<ChatUserDto[]> {
+    const chatUsersWithCommonStatus: ChatUser[] = await this.chatUserRepository.find({
+      where: { roomId: roomId, status: commonStatus },
+    });
+    const chatUserList: ChatUserDto[] = await Promise.all(
+      chatUsersWithCommonStatus.map((chatUser: ChatUser) => this.getChatUserDto(chatUser)),
+    );
+    return chatUserList;
+  }
+
+  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomListDto> {
+    const chatRoomData = new ChatRoomListDto(
       targetRoom.id,
-      targetRoom.roomMode !== 'DIRECT' ? true : false,
       targetRoom.roomName,
-      targetRoom.password === null ? false : true,
-      await this.extractChatUserDto(
-        await this.chatUserRepository.find({
-          where: { roomId: targetRoom.id, status: ChatUserStatus.NONE },
-        }),
-      ),
-      await this.extractChatUserDto(
-        await this.chatUserRepository.find({
-          where: { roomId: targetRoom.id, status: ChatUserStatus.BAN },
-        }),
-      ),
-      await this.extractChatUserDto(
-        await this.chatUserRepository.find({
-          where: { roomId: targetRoom.id, status: ChatUserStatus.MUTE },
-        }),
-      ),
+      targetRoom.roomMode,
+      await this.getChatUserList(targetRoom.id, ChatUserStatus.NONE),
+      await this.getChatUserList(targetRoom.id, ChatUserStatus.BAN),
+      await this.getChatUserList(targetRoom.id, ChatUserStatus.MUTE),
     );
     return chatRoomData;
   }
 
-  async getChatRoomList(userName: string): Promise<ChatRoomDataDto[]> {
-    const targetUser = await this.userRepository.findOne({ where: { userName: userName } });
+  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomListDto[]> {
+    const targetUser = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
     }
-    const chatUsers = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
-    const chatRoomDataDtoList: ChatRoomDataDto[] = [];
-    for (let index = 0; index < chatUsers.length; index++) {
-      const chatUser = chatUsers[index];
-      const chatRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } });
-      chatRoomDataDtoList.push(await this.extractChatRoomDataDto(chatRoom));
+    if (targetUser.userName !== userName) {
+      throw new BadRequestException('user name does not match to target user');
     }
-    return chatRoomDataDtoList;
+    const userChatProfiles = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
+    const userChatRooms: ChatRoom[] = await Promise.all(
+      userChatProfiles.map(
+        async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
+      ),
+    );
+    const chatRoomList: ChatRoomListDto[] = await Promise.all(
+      userChatRooms.map(async (chatRoom: ChatRoom) => await this.getChatRoomDto(chatRoom)),
+    );
+    return chatRoomList;
   }
 
-  async enterChatRoom(newChatUser: CreateChatUserDto): Promise<ChatUser> {
+  async enterChatRoom(userId: number, newChatUser: CreateChatUserDto): Promise<ChatUser> {
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
     });
@@ -103,50 +99,62 @@ export class ChatService {
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
-    console.log(`${roomId}, ${userId}`);
-    const newChatOwner: CreateChatUserDto = new CreateChatUserDto();
-    newChatOwner.roomId = roomId;
-    newChatOwner.userId = userId;
-    newChatOwner.status = ChatUserStatus.NONE;
-    newChatOwner.role = ChatRole.OWNER;
-    newChatOwner.muteTime = null;
-    const createdOwner = await this.chatUserRepository.save(newChatOwner.toChatUserEntity());
+    const newChatOwner: ChatUser = ChatUser.from(roomId, userId, ChatUserStatus.NONE, ChatRole.OWNER, null);
+    const createdOwner = await this.chatUserRepository.save(newChatOwner);
     const userSocketId = this.userSocketRepository.find(userId);
-    console.log(userId);
-    const ownerName = (await this.userRepository.findOne({ where: { id: createdOwner.userId } })).userName;
-    this.chatGateway.joinChatRoom(userSocketId, ownerName, roomId);
+    if (typeof userSocketId === 'string') {
+      const ownerName = (await this.userRepository.findOne({ where: { id: createdOwner.userId } })).userName;
+      this.chatGateway.joinChatRoom(userSocketId, ownerName, roomId);
+    }
     return;
   }
 
-  async createChatRoom(newRoomInfo: CreateChatRoomDto): Promise<ChatRoom> {
-    console.log(newRoomInfo.userId);
+  async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
+    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
+    if (!targetUser) throw new BadRequestException('Can not find target user');
+    if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
+    const dmUser: User = await this.userRepository.findOne({ where: { id: newRoomInfo.dmId } });
+    if (!dmUser) throw new BadRequestException('Can not find target user');
+    newRoomInfo.roomName = null;
+    newRoomInfo.password = null;
+    const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
+    await this.enterChatOwner(newRoom.id, userId);
+    await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
+    return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
+  }
+
+  async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
+    if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
+    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
+    if (!targetUser) throw new BadRequestException('Can not find target user');
     if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
     } else {
-      if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) {
-        if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
-        newRoomInfo.roomName = null;
-      }
       newRoomInfo.password = null;
     }
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
-    await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
-    if (newRoom.roomMode === ChatRoomMode.DIRECT) {
-      await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
-    }
-    return newRoom;
+    await this.enterChatOwner(newRoom.id, userId);
+    return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
-  async findAllChannel() {
-    const allChannel = await this.chatRoomRepository.find();
-    const searchResult: ChatSearchResultDto[] = [];
-    for (let index = 0; index < allChannel.length; index++) {
-      const chat = allChannel[index];
-      if (chat.roomMode !== ChatRoomMode.DIRECT && chat.roomMode !== ChatRoomMode.PRIVATE) {
-        const chatSearchDto = new ChatSearchResultDto(chat.id, chat.roomName, chat.password ? true : false);
-        searchResult.push(chatSearchDto);
-      }
-    }
+  async findFreshChannels(userId: number) {
+    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
+    if (!targetUser) throw new BadRequestException('Can not find target user');
+    const allChannel: ChatRoom[] = await this.chatRoomRepository.find({
+      where: [{ roomMode: ChatRoomMode.PUBLIC }, { roomMode: ChatRoomMode.PROTECTED }],
+    });
+    const userChatProfiles = await this.chatUserRepository.find({ where: { userId: userId } });
+    const userChatRooms: ChatRoom[] = await Promise.all(
+      userChatProfiles.map(
+        async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
+      ),
+    );
+    const freshChannel: ChatRoom[] = allChannel.filter(
+      (x: ChatRoom) => !userChatRooms.map((y: ChatRoom) => y.id).includes(x.id),
+    );
+    const searchResult: ChatRoomDto[] = await Promise.all(
+      freshChannel.map((x: ChatRoom) => new ChatRoomDto(x.id, x.roomName, x.roomMode)),
+    );
     return searchResult;
   }
 
@@ -155,7 +163,7 @@ export class ChatService {
     return targetChannel.roomMode === ChatRoomMode.DIRECT ? true : false;
   }
 
-  async changeChatRoomInfo(changeInfo: UpdateChatRoomDto) {
+  async changeChatRoomInfo(userId: number, changeInfo: UpdateChatRoomDto) {
     if (await this.isChannelDm(changeInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -169,14 +177,14 @@ export class ChatService {
       throw new BadRequestException('Permission Denied');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeInfo.roomId } });
-    changeInfo.roomName = targetRoom.roomName;
-    if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
-      throw new BadRequestException('Need a password for protected room');
-    }
-    if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
-      changeInfo.password = null;
-    }
-    Object.assign(targetRoom, changeInfo.toChatRoomEntity());
+    // changeInfo.roomName = targetRoom.roomName;
+    // if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
+    //   throw new BadRequestException('Need a password for protected room');
+    // }
+    // if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
+    //   changeInfo.password = null;
+    // }
+    // Object.assign(targetRoom, changeInfo.toChatRoomEntity());
     return await this.chatRoomRepository.save(targetRoom);
   }
 
@@ -193,7 +201,7 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserRole(changeChatUserInfo: UpdateChatUserDto) {
+  async changeChatUserRole(userId: number, changeChatUserInfo: UpdateChatUserDto) {
     if (await this.isChannelDm(changeChatUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -213,7 +221,7 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserStatus(changedUserInfo: UpdateChatUserDto) {
+  async changeChatUserStatus(userId: number, changedUserInfo: UpdateChatUserDto) {
     if (await this.isChannelDm(changedUserInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -245,7 +253,7 @@ export class ChatService {
     return;
   }
 
-  async exitChatRoom(exitInfo: ExitChatRoomDto) {
+  async exitChatRoom(userId: number, exitInfo: ExitChatRoomDto) {
     const exitUser = await this.chatUserRepository.findOne({
       where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
     });

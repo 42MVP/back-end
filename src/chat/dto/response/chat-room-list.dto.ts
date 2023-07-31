@@ -1,20 +1,16 @@
-import { IsBoolean, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ChatUserDto } from './chat-user.dto';
+import { ChatRoomMode } from 'src/common/enums';
 
-export class ChatRoomDataDto {
+export class ChatRoomListDto {
   @IsNotEmpty()
   @IsNumber()
   id: number;
 
-  @IsNotEmpty()
-  @IsBoolean()
-  isChannel: boolean;
-
   name: string;
 
   @IsNotEmpty()
-  @IsBoolean()
-  hasPassword: boolean;
+  roomMode: ChatRoomMode;
 
   users: ChatUserDto[];
 
@@ -24,17 +20,15 @@ export class ChatRoomDataDto {
 
   constructor(
     id: number,
-    isChannel: boolean,
     name: string,
-    hasPassword: boolean,
+    roomMode: ChatRoomMode,
     users: ChatUserDto[],
     banUsers: ChatUserDto[],
     abong: ChatUserDto[],
   ) {
     this.id = id;
-    this.isChannel = isChannel;
     this.name = name;
-    this.hasPassword = hasPassword;
+    this.roomMode = roomMode;
     this.users = users;
     this.banUsers = banUsers;
     this.abong = abong;
