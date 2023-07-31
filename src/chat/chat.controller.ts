@@ -1,12 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { newChatRoomDto } from './dto/request/new-chat-room.dto';
-import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
+import { EnterChatRoomDto } from './dto/request/enter-chat-room.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -29,14 +29,14 @@ export class ChatController {
   }
 
   @Post('enter-room')
-  enterChatRoom(@ExtractId() userId: number, @Body() newChatUser: CreateChatUserDto) {
+  enterChatRoom(@ExtractId() userId: number, @Body() newChatUser: EnterChatRoomDto) {
     return this.chatService.enterChatRoom(userId, newChatUser);
   }
 
-  @Post('invite')
-  inviteChatUser(@ExtractId() userId: number, @Body() invitedChatUser: CreateChatUserDto) {
-    return this.chatService.enterChatRoom(userId, invitedChatUser);
-  }
+  // @Post('invite')
+  // inviteChatUser(@ExtractId() userId: number, @Body() invitedChatUser: CreateChatUserDto) {
+  //   return this.chatService.enterChatRoom(userId, invitedChatUser);
+  // }
 
   @Patch('change-room-info')
   changeChatRoomInfo(@ExtractId() userId: number, @Body() changeInfo: UpdateChatRoomDto) {

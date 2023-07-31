@@ -5,19 +5,18 @@ import { ChatRoom } from '../common/entities/chatroom.entity';
 import { ChatUser } from '../common/entities/chatuser.entity';
 import { User } from '../common/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
-import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
-import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { ChatRoomListDto } from './dto/response/chat-room-list.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
+import { EnterChatRoomDto } from './dto/request/enter-chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -80,22 +79,27 @@ export class ChatService {
     return chatRoomList;
   }
 
-  async enterChatRoom(userId: number, newChatUser: CreateChatUserDto): Promise<ChatUser> {
+  async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomListDto> {
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: chatRoom.roomId } });
+    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
+      throw new BadRequestException('Wrong Password');
+    }
     const isExistUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatUser.roomId, userId: newChatUser.userId },
+      where: { roomId: chatRoom.roomId, userId: userId },
     });
     if (isExistUser && isExistUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: newChatUser.roomId } });
-    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== newChatUser.roomPassword) {
-      throw new BadRequestException('Wrong Password');
+    if (!isExistUser) {
+      const newChatUser: ChatUser = ChatUser.from(chatRoom.roomId, userId, ChatUserStatus.NONE, ChatRole.USER, null);
+      await this.chatUserRepository.save(newChatUser);
     }
-    const createdUser = await this.chatUserRepository.save(newChatUser.toChatUserEntity());
-    const userSocketId = this.userSocketRepository.find(createdUser.userId);
-    const userName = (await this.userRepository.findOne({ where: { id: createdUser.userId } })).userName;
-    this.chatGateway.joinChatRoom(userSocketId, userName, createdUser.roomId);
-    return createdUser;
+    const userSocketId = this.userSocketRepository.find(userId);
+    if (typeof userSocketId === 'string') {
+      const userName = (await this.userRepository.findOne({ where: { id: userId } })).userName;
+      this.chatGateway.joinChatRoom(userSocketId, userName, chatRoom.roomId);
+    }
+    return this.getChatRoomDto(targetRoom);
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
@@ -209,10 +213,10 @@ export class ChatService {
       where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.execUserId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.userId },
+      where: { roomId: changeChatUserInfo.roomId, userId: userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
+    // Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
@@ -229,27 +233,27 @@ export class ChatService {
       where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.execUserId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.userId },
+      where: { roomId: changedUserInfo.roomId, userId: userId },
     });
-    this.checkUserAutority(execUser, targetUser);
-    if (changedUserInfo.status === ChatUserStatus.MUTE) {
-      if (!changedUserInfo.muteTime) throw new BadRequestException('Need limited mute time');
-      this.muteTimeRepository.save(changedUserInfo.userId, changedUserInfo.muteTime);
-    }
-    if (changedUserInfo.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
-      changedUserInfo.muteTime = null;
-    }
-    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
-    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
-    changedStatus.status = changedUserInfo.status;
-    const userSocket = this.userSocketRepository.find(changedUserInfo.userId);
-    if (changedUserInfo.status === ChatUserStatus.KICK) {
-      await this.chatUserRepository.remove(targetUser);
-    } else {
-      Object.assign(targetUser, changedUserInfo);
-      await this.chatUserRepository.save(targetUser);
-    }
-    this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, changedUserInfo.roomId);
+    // this.checkUserAutority(execUser, targetUser);
+    // if (changedUserInfo.status === ChatUserStatus.MUTE) {
+    //   if (!changedUserInfo.muteTime) throw new BadRequestException('Need limited mute time');
+    //   this.muteTimeRepository.save(changedUserInfo.userId, changedUserInfo.muteTime);
+    // }
+    // if (changedUserInfo.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
+    //   changedUserInfo.muteTime = null;
+    // }
+    // const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
+    // changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
+    // changedStatus.status = changedUserInfo.status;
+    // const userSocket = this.userSocketRepository.find(changedUserInfo.userId);
+    // if (changedUserInfo.status === ChatUserStatus.KICK) {
+    //   await this.chatUserRepository.remove(targetUser);
+    // } else {
+    //   Object.assign(targetUser, changedUserInfo);
+    //   await this.chatUserRepository.save(targetUser);
+    // }
+    // this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, changedUserInfo.roomId);
     return;
   }
 
