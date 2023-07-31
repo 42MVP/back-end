@@ -53,8 +53,8 @@ export class ChatController {
     return this.chatService.changeChatUserStatus(userId, changeChatUserInfo);
   }
 
-  @Delete('exit-room')
-  exitChatRoom(@ExtractId() userId: number, @Body() exitInfo: ExitChatRoomDto) {
-    return this.chatService.exitChatRoom(userId, exitInfo);
+  @Delete('exit-room/:roomid')
+  exitChatRoom(@ExtractId() userId: number, @Param('roomid') roomId: number) {
+    return this.chatService.exitChatRoom(userId, roomId);
   }
 }

@@ -257,20 +257,32 @@ export class ChatService {
     return;
   }
 
-  async exitChatRoom(userId: number, exitInfo: ExitChatRoomDto) {
+  async leaveChatRoom(chatUser: ChatUser) {
+    const userSocketId = this.userSocketRepository.find(chatUser.userId);
+    if (typeof userSocketId === 'string') {
+      const userName = (await this.userRepository.findOne({ where: { id: chatUser.userId } })).userName;
+      this.chatGateway.exitChatRoom(userSocketId, userName, chatUser.roomId);
+    }
+    await this.chatUserRepository.remove(chatUser);
+  }
+
+  async destroyChatRoom(targetRoom: ChatRoom) {
+    const chatUsers: ChatUser[] = await this.chatUserRepository.find({ where: { roomId: targetRoom.id } });
+    chatUsers.map(async (x: ChatUser) => await this.leaveChatRoom(x));
+    await this.chatRoomRepository.remove(targetRoom);
+  }
+
+  async exitChatRoom(userId: number, roomId: number) {
+    const targetRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+    if (!targetRoom) throw new NotFoundException('can not exit from non existing room');
     const exitUser = await this.chatUserRepository.findOne({
-      where: { roomId: exitInfo.roomId, userId: exitInfo.userId },
+      where: { roomId: roomId, userId: userId },
     });
-    const userSocketId = this.userSocketRepository.find(exitInfo.userId);
-    const userName = (await this.userRepository.findOne({ where: { id: exitUser.userId } })).userName;
-    this.chatGateway.exitChatRoom(userSocketId, userName, exitInfo.roomId);
+    if (!exitUser) throw new NotFoundException('Can not find target user');
     if (exitUser.role !== ChatRole.OWNER) {
-      return await this.chatUserRepository.remove(exitUser);
+      await this.leaveChatRoom(exitUser);
     } else {
-      const exitRoom = await this.chatRoomRepository.findOne({ where: { id: exitInfo.roomId } });
-      const chatUsers = await this.chatUserRepository.find({ where: { roomId: exitInfo.roomId } });
-      await this.chatUserRepository.remove(chatUsers);
-      return await this.chatRoomRepository.remove(exitRoom);
+      await this.destroyChatRoom(targetRoom);
     }
   }
 }
