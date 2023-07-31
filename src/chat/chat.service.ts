@@ -6,17 +6,16 @@ import { ChatUser } from '../common/entities/chatuser.entity';
 import { User } from '../common/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
-import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
 import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
-import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { EnterChatRoomDto } from './dto/request/enter-chat-room.dto';
+import { ChangeChatRoomDto } from './dto/request/change-chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -167,12 +166,14 @@ export class ChatService {
     return targetChannel.roomMode === ChatRoomMode.DIRECT ? true : false;
   }
 
-  async changeChatRoomInfo(userId: number, changeInfo: UpdateChatRoomDto) {
-    if (await this.isChannelDm(changeInfo.roomId)) {
+  async changeChatRoomInfo(userId: number, changeRoomInfo: ChangeChatRoomDto) {
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeRoomInfo.roomId } });
+    if (!targetRoom) throw new NotFoundException('No such Chat room');
+    if (await this.isChannelDm(changeRoomInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeInfo.roomId, userId: changeInfo.execUserId },
+      where: { roomId: changeRoomInfo.roomId, userId: userId },
     });
     if (!execUser) {
       throw new NotFoundException('No Such UserId or RoomId');
@@ -180,16 +181,18 @@ export class ChatService {
     if (execUser.role !== ChatRole.OWNER) {
       throw new BadRequestException('Permission Denied');
     }
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeInfo.roomId } });
-    // changeInfo.roomName = targetRoom.roomName;
-    // if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
-    //   throw new BadRequestException('Need a password for protected room');
-    // }
-    // if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
-    //   changeInfo.password = null;
-    // }
-    // Object.assign(targetRoom, changeInfo.toChatRoomEntity());
-    return await this.chatRoomRepository.save(targetRoom);
+    if (changeRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
+      console.log(typeof changeRoomInfo.password);
+      if (typeof changeRoomInfo.password !== 'string')
+        throw new BadRequestException('Need a password for protected room');
+    }
+    if (changeRoomInfo.roomMode !== ChatRoomMode.PROTECTED) {
+      changeRoomInfo.password = null;
+    }
+    if (changeRoomInfo.roomMode) targetRoom.roomMode = changeRoomInfo.roomMode;
+    if (changeRoomInfo.password) targetRoom.password = changeRoomInfo.password;
+    await this.chatRoomRepository.save(targetRoom);
+    return;
   }
 
   checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {

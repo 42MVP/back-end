@@ -2,11 +2,10 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { ChatService } from './chat.service';
 import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
-import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
-import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 import { EnterChatRoomDto } from './dto/request/enter-chat-room.dto';
+import { ChangeChatRoomDto } from './dto/request/change-chat-room.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -39,8 +38,8 @@ export class ChatController {
   // }
 
   @Patch('change-room-info')
-  changeChatRoomInfo(@ExtractId() userId: number, @Body() changeInfo: UpdateChatRoomDto) {
-    return this.chatService.changeChatRoomInfo(userId, changeInfo);
+  changeChatRoomInfo(@ExtractId() userId: number, @Body() changeRoomInfo: ChangeChatRoomDto) {
+    return this.chatService.changeChatRoomInfo(userId, changeRoomInfo);
   }
 
   @Patch('change-role')
