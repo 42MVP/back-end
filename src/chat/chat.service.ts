@@ -12,7 +12,7 @@ import { UserSocketRepository } from '../repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
-import { ChatRoomListDto } from './dto/response/chat-room-list.dto';
+import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
@@ -47,8 +47,8 @@ export class ChatService {
     return chatUserList;
   }
 
-  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomListDto> {
-    const chatRoomData = new ChatRoomListDto(
+  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
+    const chatRoomData = new ChatRoomDataDto(
       targetRoom.id,
       targetRoom.roomName,
       targetRoom.roomMode,
@@ -59,7 +59,7 @@ export class ChatService {
     return chatRoomData;
   }
 
-  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomListDto[]> {
+  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomDataDto[]> {
     const targetUser = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
@@ -73,13 +73,13 @@ export class ChatService {
         async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
       ),
     );
-    const chatRoomList: ChatRoomListDto[] = await Promise.all(
+    const chatRoomList: ChatRoomDataDto[] = await Promise.all(
       userChatRooms.map(async (chatRoom: ChatRoom) => await this.getChatRoomDto(chatRoom)),
     );
     return chatRoomList;
   }
 
-  async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomListDto> {
+  async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomDataDto> {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: chatRoom.roomId } });
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
