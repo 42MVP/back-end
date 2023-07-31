@@ -14,11 +14,10 @@ import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
-import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
+import { ChatRoomListDto } from './dto/response/chat-room-list.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
-import { ChatSearchResultDto } from './dto/response/chat-search-result.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
-import { CreatedChatRoomDto } from './dto/response/created-chat-room.dto';
+import { ChatRoomDto } from './dto/response/chat-room.dto';
 
 @Injectable()
 export class ChatService {
@@ -49,8 +48,8 @@ export class ChatService {
     return chatUserList;
   }
 
-  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
-    const chatRoomData = new ChatRoomDataDto(
+  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomListDto> {
+    const chatRoomData = new ChatRoomListDto(
       targetRoom.id,
       targetRoom.roomName,
       targetRoom.roomMode,
@@ -61,7 +60,7 @@ export class ChatService {
     return chatRoomData;
   }
 
-  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomDataDto[]> {
+  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomListDto[]> {
     const targetUser = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) {
       throw new BadRequestException('Can not find target user');
@@ -75,7 +74,7 @@ export class ChatService {
         async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
       ),
     );
-    const chatRoomList: ChatRoomDataDto[] = await Promise.all(
+    const chatRoomList: ChatRoomListDto[] = await Promise.all(
       userChatRooms.map(async (chatRoom: ChatRoom) => await this.getChatRoomDto(chatRoom)),
     );
     return chatRoomList;
@@ -110,7 +109,7 @@ export class ChatService {
     return;
   }
 
-  async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<CreatedChatRoomDto> {
+  async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) throw new BadRequestException('Can not find target user');
     if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
@@ -121,10 +120,10 @@ export class ChatService {
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
     await this.enterChatOwner(newRoom.id, userId);
     await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
-    return new CreatedChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
+    return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
-  async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<CreatedChatRoomDto> {
+  async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
     const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) throw new BadRequestException('Can not find target user');
@@ -135,7 +134,7 @@ export class ChatService {
     }
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
     await this.enterChatOwner(newRoom.id, userId);
-    return new CreatedChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
+    return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
   async findFreshChannels(userId: number) {
@@ -153,8 +152,8 @@ export class ChatService {
     const freshChannel: ChatRoom[] = allChannel.filter(
       (x: ChatRoom) => !userChatRooms.map((y: ChatRoom) => y.id).includes(x.id),
     );
-    const searchResult: CreatedChatRoomDto[] = await Promise.all(
-      freshChannel.map((x: ChatRoom) => new CreatedChatRoomDto(x.id, x.roomName, x.roomMode)),
+    const searchResult: ChatRoomDto[] = await Promise.all(
+      freshChannel.map((x: ChatRoom) => new ChatRoomDto(x.id, x.roomName, x.roomMode)),
     );
     return searchResult;
   }

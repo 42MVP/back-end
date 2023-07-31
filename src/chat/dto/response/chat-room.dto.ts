@@ -1,7 +1,7 @@
 import { IsNotEmpty, IsNumber } from 'class-validator';
 import { ChatRoomMode } from 'src/common/enums';
 
-export class CreatedChatRoomDto {
+export class ChatRoomDto {
   @IsNotEmpty()
   @IsNumber()
   id: number;
