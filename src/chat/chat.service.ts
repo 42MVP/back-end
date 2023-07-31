@@ -138,16 +138,24 @@ export class ChatService {
     return new CreatedChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
-  async findAllChannel() {
-    const allChannel = await this.chatRoomRepository.find();
-    const searchResult: ChatSearchResultDto[] = [];
-    for (let index = 0; index < allChannel.length; index++) {
-      const chat = allChannel[index];
-      if (chat.roomMode !== ChatRoomMode.DIRECT && chat.roomMode !== ChatRoomMode.PRIVATE) {
-        const chatSearchDto = new ChatSearchResultDto(chat.id, chat.roomName, chat.password ? true : false);
-        searchResult.push(chatSearchDto);
-      }
-    }
+  async findFreshChannels(userId: number) {
+    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
+    if (!targetUser) throw new BadRequestException('Can not find target user');
+    const allChannel: ChatRoom[] = await this.chatRoomRepository.find({
+      where: [{ roomMode: ChatRoomMode.PUBLIC }, { roomMode: ChatRoomMode.PROTECTED }],
+    });
+    const userChatProfiles = await this.chatUserRepository.find({ where: { userId: userId } });
+    const userChatRooms: ChatRoom[] = await Promise.all(
+      userChatProfiles.map(
+        async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
+      ),
+    );
+    const freshChannel: ChatRoom[] = allChannel.filter(
+      (x: ChatRoom) => !userChatRooms.map((y: ChatRoom) => y.id).includes(x.id),
+    );
+    const searchResult: CreatedChatRoomDto[] = await Promise.all(
+      freshChannel.map((x: ChatRoom) => new CreatedChatRoomDto(x.id, x.roomName, x.roomMode)),
+    );
     return searchResult;
   }
 

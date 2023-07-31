@@ -15,8 +15,7 @@ export class ChatController {
 
   @Get('search')
   findAllChannel(@ExtractId() userId: number) {
-    console.log(userId);
-    return this.chatService.findAllChannel();
+    return this.chatService.findFreshChannels(userId);
   }
 
   @Get(':username')
