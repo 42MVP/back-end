@@ -19,9 +19,9 @@ export class ChatController {
     return this.chatService.findAllChannel();
   }
 
-  @Get(':user-name')
-  getChatRoomList(@ExtractId() userId: number) {
-    return this.chatService.getChatRoomList(userId);
+  @Get(':username')
+  getChatRoomList(@ExtractId() userId: number, @Param('username') userName: string) {
+    return this.chatService.getChatRoomList(userId, userName);
   }
 
   @Post('create-room')
