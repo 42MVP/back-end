@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
+import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
-import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
 import { ExitChatRoomDto } from './dto/request/exit-chat-room.dto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
@@ -25,7 +25,7 @@ export class ChatController {
   }
 
   @Post('create-room')
-  createChatRoom(@ExtractId() userId: number, @Body() newRoomInfo: CreateChatRoomDto) {
+  createChatRoom(@ExtractId() userId: number, @Body() newRoomInfo: newChatRoomDto) {
     return this.chatService.createChatRoom(userId, newRoomInfo);
   }
 

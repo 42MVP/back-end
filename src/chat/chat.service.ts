@@ -8,7 +8,7 @@ import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
 import { CreateChatUserDto } from './dto/request/create-chat-user.dto';
 import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
 import { UpdateChatRoomDto } from './dto/request/update-chat-room.dto';
-import { CreateChatRoomDto } from './dto/request/create-chat-room.dto';
+import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { ChatGateway } from './chat.gateway';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
@@ -110,7 +110,7 @@ export class ChatService {
     return;
   }
 
-  async createDMRoom(userId: number, newRoomInfo: CreateChatRoomDto): Promise<CreatedChatRoomDto> {
+  async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<CreatedChatRoomDto> {
     const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) throw new BadRequestException('Can not find target user');
     if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
@@ -124,7 +124,7 @@ export class ChatService {
     return new CreatedChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
-  async createChatRoom(userId: number, newRoomInfo: CreateChatRoomDto): Promise<CreatedChatRoomDto> {
+  async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<CreatedChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
     const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) throw new BadRequestException('Can not find target user');
@@ -170,14 +170,14 @@ export class ChatService {
       throw new BadRequestException('Permission Denied');
     }
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeInfo.roomId } });
-    changeInfo.roomName = targetRoom.roomName;
-    if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
-      throw new BadRequestException('Need a password for protected room');
-    }
-    if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
-      changeInfo.password = null;
-    }
-    Object.assign(targetRoom, changeInfo.toChatRoomEntity());
+    // changeInfo.roomName = targetRoom.roomName;
+    // if (changeInfo.roomMode === ChatRoomMode.PROTECTED && changeInfo.password === null) {
+    //   throw new BadRequestException('Need a password for protected room');
+    // }
+    // if (changeInfo.roomMode !== ChatRoomMode.PROTECTED) {
+    //   changeInfo.password = null;
+    // }
+    // Object.assign(targetRoom, changeInfo.toChatRoomEntity());
     return await this.chatRoomRepository.save(targetRoom);
   }
 
