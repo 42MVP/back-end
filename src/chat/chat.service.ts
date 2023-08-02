@@ -147,9 +147,6 @@ export class ChatService {
 
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
-    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== invitedChatUser.password) {
-      throw new BadRequestException('Wrong Password');
-    }
     const isExistUser = await this.chatUserRepository.findOne({
       where: { roomId: invitedChatUser.roomId, userId: userId },
     });
