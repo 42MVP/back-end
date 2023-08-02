@@ -5,17 +5,20 @@ import { ChatRoom } from '../common/entities/chatroom.entity';
 import { ChatUser } from '../common/entities/chatuser.entity';
 import { User } from '../common/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
-import { UpdateChatUserDto } from './dto/request/update-chat-user.dto';
-import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
-import { ChatGateway } from './chat.gateway';
-import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
-import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
-import { ChatUserDto } from './dto/response/chat-user.dto';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
-import { ChatRoomDto } from './dto/response/chat-room.dto';
+import { ChatGateway } from './chat.gateway';
+import { newChatRoomDto } from './dto/request/new-chat-room.dto';
 import { EnterChatRoomDto } from './dto/request/enter-chat-room.dto';
 import { ChangeChatRoomDto } from './dto/request/change-chat-room.dto';
+import { FindChatUserDto } from './dto/request/find-chat-user.dto';
+import { UpdateChatStatusDto } from './dto/request/update-chat-status.dto';
+import { UpdateChatRoleDto } from './dto/request/update-chat-role.dto';
+import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
+import { ChatUserDto } from './dto/response/chat-user.dto';
+import { ChatRoomDto } from './dto/response/chat-room.dto';
+import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
+import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 
 @Injectable()
 export class ChatService {
@@ -140,6 +143,10 @@ export class ChatService {
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
+  async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
+    return;
+  }
+
   async findFreshChannels(userId: number) {
     const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
     if (!targetUser) throw new BadRequestException('Can not find target user');
@@ -208,18 +215,18 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserRole(userId: number, changeChatUserInfo: UpdateChatUserDto) {
-    if (await this.isChannelDm(changeChatUserInfo.roomId)) {
+  async changeChatUserRole(userId: number, newChatRole: UpdateChatRoleDto) {
+    if (await this.isChannelDm(newChatRole.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeChatUserInfo.roomId, userId: changeChatUserInfo.execUserId },
+      where: { roomId: newChatRole.roomId, userId: userId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeChatUserInfo.roomId, userId: userId },
+      where: { roomId: newChatRole.roomId, userId: userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    // Object.assign(targetUser, changeChatUserInfo.toChatUserEntity());
+    // Object.assign(targetUser, newChatRole.toChatUserEntity());
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
@@ -228,35 +235,35 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserStatus(userId: number, changedUserInfo: UpdateChatUserDto) {
-    if (await this.isChannelDm(changedUserInfo.roomId)) {
+  async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
+    if (await this.isChannelDm(newChatStatus.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: changedUserInfo.roomId, userId: changedUserInfo.execUserId },
+      where: { roomId: newChatStatus.roomId, userId: userId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: changedUserInfo.roomId, userId: userId },
+      where: { roomId: newChatStatus.roomId, userId: userId },
     });
-    // this.checkUserAutority(execUser, targetUser);
-    // if (changedUserInfo.status === ChatUserStatus.MUTE) {
-    //   if (!changedUserInfo.muteTime) throw new BadRequestException('Need limited mute time');
-    //   this.muteTimeRepository.save(changedUserInfo.userId, changedUserInfo.muteTime);
-    // }
-    // if (changedUserInfo.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
-    //   changedUserInfo.muteTime = null;
-    // }
-    // const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
-    // changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
-    // changedStatus.status = changedUserInfo.status;
-    // const userSocket = this.userSocketRepository.find(changedUserInfo.userId);
-    // if (changedUserInfo.status === ChatUserStatus.KICK) {
-    //   await this.chatUserRepository.remove(targetUser);
-    // } else {
-    //   Object.assign(targetUser, changedUserInfo);
-    //   await this.chatUserRepository.save(targetUser);
-    // }
-    // this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, changedUserInfo.roomId);
+    this.checkUserAutority(execUser, targetUser);
+    if (targetUser.status === ChatUserStatus.MUTE) {
+      if (!targetUser.muteTime) throw new BadRequestException('Need limited mute time');
+      this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+    }
+    if (targetUser.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
+      targetUser.muteTime = null;
+    }
+    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
+    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
+    changedStatus.status = targetUser.status;
+    const userSocket = this.userSocketRepository.find(targetUser.userId);
+    if (targetUser.status === ChatUserStatus.KICK) {
+      await this.chatUserRepository.remove(targetUser);
+    } else {
+      Object.assign(targetUser, targetUser);
+      await this.chatUserRepository.save(targetUser);
+    }
+    this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
     return;
   }
 
