@@ -216,17 +216,17 @@ export class ChatService {
   }
 
   async changeChatUserRole(userId: number, newChatRole: UpdateChatRoleDto) {
-    if (await this.isChannelDm(newChatRole.roomId)) {
-      throw new BadRequestException('Can not change DM channel info');
-    }
     const execUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatRole.roomId, userId: userId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatRole.roomId, userId: userId },
+      where: { roomId: newChatRole.roomId, userId: newChatRole.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    // Object.assign(targetUser, newChatRole.toChatUserEntity());
+    if (await this.isChannelDm(newChatRole.roomId)) {
+      throw new BadRequestException('Can not change DM channel info');
+    }
+    targetUser.role = newChatRole.role;
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
