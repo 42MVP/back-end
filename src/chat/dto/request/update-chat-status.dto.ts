@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 import { ChatUserStatus } from 'src/common/enums';
 
 export class UpdateChatStatusDto {
@@ -12,4 +12,7 @@ export class UpdateChatStatusDto {
 
   @IsNotEmpty()
   status: ChatUserStatus;
+
+  @IsOptional()
+  muteTime: Date;
 }

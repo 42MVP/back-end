@@ -34,6 +34,8 @@ export class ChatService {
     private chatGateway: ChatGateway,
   ) {}
 
+  private defaultMuteTime: Date = new Date('1970-01-01T00:00:00.000Z');
+
   async getChatUserDto(chatUser: ChatUser): Promise<ChatUserDto> {
     const user: User = await this.userRepository.findOne({ where: { id: chatUser.userId } });
     return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
@@ -235,35 +237,44 @@ export class ChatService {
     return;
   }
 
-  async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
-    if (await this.isChannelDm(newChatStatus.roomId)) {
-      throw new BadRequestException('Can not change DM channel info');
+  updateMuteTime(newChatStatus: UpdateChatStatusDto, targetUser: ChatUser) {
+    if (newChatStatus.status == ChatUserStatus.MUTE) {
+      if (!newChatStatus.muteTime || typeof newChatStatus.muteTime === 'undefined')
+        throw new BadRequestException('Need limited mute time');
+      targetUser.muteTime = newChatStatus.muteTime;
+      this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+    } else {
+      console.log(`${this.defaultMuteTime}`);
+      targetUser.muteTime = this.defaultMuteTime;
+      this.muteTimeRepository.delete(targetUser.userId);
     }
+  }
+
+  async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
     const execUser = await this.chatUserRepository.findOne({
       where: { roomId: newChatStatus.roomId, userId: userId },
     });
     const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatStatus.roomId, userId: userId },
+      where: { roomId: newChatStatus.roomId, userId: newChatStatus.userId },
     });
     this.checkUserAutority(execUser, targetUser);
-    if (targetUser.status === ChatUserStatus.MUTE) {
-      if (!targetUser.muteTime) throw new BadRequestException('Need limited mute time');
-      this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+    if (await this.isChannelDm(newChatStatus.roomId)) {
+      throw new BadRequestException('Can not change DM channel info');
     }
-    if (targetUser.status !== ChatUserStatus.MUTE && targetUser.muteTime) {
-      targetUser.muteTime = null;
-    }
-    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
-    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
-    changedStatus.status = targetUser.status;
-    const userSocket = this.userSocketRepository.find(targetUser.userId);
+    targetUser.status = newChatStatus.status;
+    this.updateMuteTime(newChatStatus, targetUser);
     if (targetUser.status === ChatUserStatus.KICK) {
       await this.chatUserRepository.remove(targetUser);
     } else {
       Object.assign(targetUser, targetUser);
       await this.chatUserRepository.save(targetUser);
     }
-    this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
+    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
+    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
+    changedStatus.status = targetUser.status;
+    const userSocket = this.userSocketRepository.find(targetUser.userId);
+    if (typeof userSocket === 'string')
+      this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
     return;
   }
 
