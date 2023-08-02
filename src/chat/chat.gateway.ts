@@ -16,13 +16,6 @@ export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  // // 테스트용 connection 함수: 실제 구동에는 사용하지 않습니다.
-  // handleConnection(@ConnectedSocket() client: Socket) {
-  //   console.log(`${userId}: socketid [${client.id}]`);
-  //   this.userSocketRepository.save(userId, client.id);
-  //   userId++;
-  // }
-
   isUserMuted(userId: number): boolean {
     const userMuteTime: Date | undefined = this.muteTimeRepository.find(userId);
     if (typeof userMuteTime === undefined) {
@@ -54,8 +47,8 @@ export class ChatGateway {
 
   exitChatRoom(userSocket: string, userName: string, roomId: number) {
     const roomName: string = roomId.toString();
-    this.server.in(userSocket).socketsLeave(roomName);
     this.server.to(roomName).emit('leave', userName);
+    this.server.in(userSocket).socketsLeave(roomName);
     return;
   }
 
@@ -69,12 +62,12 @@ export class ChatGateway {
     const roomName: string = roomId.toString();
     switch (newStatus.status) {
       case ChatUserStatus.BAN:
-        this.server.to(userSocket).socketsLeave(roomName);
         this.server.to(roomName).emit('ban', newStatus);
+        this.server.to(userSocket).socketsLeave(roomName);
         break;
       case ChatUserStatus.KICK:
-        this.server.to(userSocket).socketsLeave(roomName);
         this.server.to(roomName).emit('kick', newStatus);
+        this.server.to(userSocket).socketsLeave(roomName);
         break;
       case ChatUserStatus.MUTE:
         this.server.to(roomName).emit('mute', newStatus);
