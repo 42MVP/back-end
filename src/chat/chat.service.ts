@@ -146,7 +146,32 @@ export class ChatService {
   }
 
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
-    return;
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
+    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== invitedChatUser.password) {
+      throw new BadRequestException('Wrong Password');
+    }
+    const isExistUser = await this.chatUserRepository.findOne({
+      where: { roomId: invitedChatUser.roomId, userId: userId },
+    });
+    if (isExistUser && isExistUser.status === ChatUserStatus.BAN) {
+      throw new BadRequestException('The user has been banned');
+    }
+    if (!isExistUser) {
+      const newChatUser: ChatUser = ChatUser.from(
+        invitedChatUser.roomId,
+        invitedChatUser.userId,
+        ChatUserStatus.NONE,
+        ChatRole.USER,
+        this.defaultMuteTime,
+      );
+      await this.chatUserRepository.save(newChatUser);
+    }
+    const userSocketId = this.userSocketRepository.find(invitedChatUser.userId);
+    if (typeof userSocketId === 'string') {
+      const userName = (await this.userRepository.findOne({ where: { id: invitedChatUser.userId } })).userName;
+      this.chatGateway.joinChatRoom(userSocketId, userName, invitedChatUser.roomId);
+    }
+    return this.getChatRoomDto(targetRoom);
   }
 
   async findFreshChannels(userId: number) {
