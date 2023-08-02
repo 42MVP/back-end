@@ -49,6 +49,11 @@ export class ChatController {
     return this.chatService.changeChatUserRole(userId, newChatRole);
   }
 
+  @Delete('kick')
+  kickChatUser(@ExtractId() userId: number, @Body() kickInfo: UpdateChatStatusDto) {
+    return this.chatService.changeChatUserStatus(userId, kickInfo);
+  }
+
   @Patch('change-status')
   changeChatUserStatus(@ExtractId() userId: number, @Body() newChatStatus: UpdateChatStatusDto) {
     return this.chatService.changeChatUserStatus(userId, newChatStatus);

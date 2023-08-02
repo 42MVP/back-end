@@ -244,7 +244,7 @@ export class ChatService {
       targetUser.muteTime = newChatStatus.muteTime;
       this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
     } else {
-      console.log(`${this.defaultMuteTime}`);
+      // console.log(`${this.defaultMuteTime}`);
       targetUser.muteTime = this.defaultMuteTime;
       this.muteTimeRepository.delete(targetUser.userId);
     }
