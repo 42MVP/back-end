@@ -37,7 +37,7 @@ export class ChatService {
   private defaultMuteTime: Date = new Date('1970-01-01T00:00:00.000Z');
 
   async getChatUserDto(chatUser: ChatUser): Promise<ChatUserDto> {
-    const user: User = await this.userRepository.findOne({ where: { id: chatUser.userId } });
+    const user: User = await this.findExistUser(chatUser.userId);
     return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
   }
 
@@ -64,10 +64,7 @@ export class ChatService {
   }
 
   async getChatRoomList(userId: number, userName: string): Promise<ChatRoomDataDto[]> {
-    const targetUser = await this.userRepository.findOne({ where: { id: userId } });
-    if (!targetUser) {
-      throw new BadRequestException('Can not find target user');
-    }
+    const targetUser = await this.findExistUser(userId);
     if (targetUser.userName !== userName) {
       throw new BadRequestException('user name does not match to target user');
     }
@@ -88,7 +85,9 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    const targetChatUser = await this.findExistChatUser(chatRoom.roomId, userId);
+    const targetChatUser = await this.chatUserRepository.findOne({
+      where: { roomId: chatRoom.roomId, userId: userId },
+    });
     if (targetChatUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
@@ -116,11 +115,9 @@ export class ChatService {
   }
 
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
-    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
-    if (!targetUser) throw new BadRequestException('Can not find target user');
+    await this.findExistUser(userId);
     if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
-    const dmUser: User = await this.userRepository.findOne({ where: { id: newRoomInfo.dmId } });
-    if (!dmUser) throw new BadRequestException('Can not find target user');
+    await this.findExistUser(newRoomInfo.dmId);
     newRoomInfo.roomName = null;
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
@@ -131,8 +128,7 @@ export class ChatService {
 
   async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
-    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
-    if (!targetUser) throw new BadRequestException('Can not find target user');
+    await this.findExistUser(userId);
     if (newRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (!newRoomInfo.password) throw new BadRequestException('Protected room need a password');
     } else {
@@ -145,8 +141,12 @@ export class ChatService {
 
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
-    const targetChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
-    if (targetChatUser.status === ChatUserStatus.BAN) {
+    const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
+    const targetUser: User = await this.findExistUser(invitedChatUser.userId);
+    const targetChatUser = await this.chatUserRepository.findOne({
+      where: { roomId: invitedChatUser.roomId, userId: invitedChatUser.userId },
+    });
+    if (targetChatUser && targetChatUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
     if (!targetChatUser) {
@@ -168,8 +168,7 @@ export class ChatService {
   }
 
   async findFreshChannels(userId: number) {
-    const targetUser: User = await this.userRepository.findOne({ where: { id: userId } });
-    if (!targetUser) throw new BadRequestException('Can not find target user');
+    await this.findExistUser(userId);
     const allChannel: ChatRoom[] = await this.chatRoomRepository.find({
       where: [{ roomMode: ChatRoomMode.PUBLIC }, { roomMode: ChatRoomMode.PROTECTED }],
     });
@@ -204,7 +203,6 @@ export class ChatService {
       throw new BadRequestException('Permission Denied');
     }
     if (changeRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
-      console.log(typeof changeRoomInfo.password);
       if (typeof changeRoomInfo.password !== 'string')
         throw new BadRequestException('Need a password for protected room');
     }
@@ -304,6 +302,17 @@ export class ChatService {
     } else {
       await this.destroyChatRoom(targetRoom);
     }
+  }
+
+  /**
+   * userId를 통해 user 테이블 내 유저를 찾습니다.
+   * @param userId 찾고자 하는 유저 id
+   * @returns 성공시 해당 유저의 Entity를 반환합니다. 싫패시 NotFoundException을 던집니다.
+   */
+  async findExistUser(userId: number) {
+    const targetUser: User = await this.userRepository.findOneBy({ id: userId });
+    if (!targetUser) throw new NotFoundException('No Such User');
+    return targetUser;
   }
 
   /**
