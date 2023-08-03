@@ -70,9 +70,7 @@ export class ChatService {
     }
     const userChatProfiles = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
     const userChatRooms: ChatRoom[] = await Promise.all(
-      userChatProfiles.map(
-        async (chatUser: ChatUser) => await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } }),
-      ),
+      userChatProfiles.map(async (chatUser: ChatUser) => await this.findExistChatRoom(chatUser.roomId)),
     );
     const chatRoomList: ChatRoomDataDto[] = await Promise.all(
       userChatRooms.map(async (chatRoom: ChatRoom) => await this.getChatRoomDto(chatRoom)),
@@ -81,7 +79,7 @@ export class ChatService {
   }
 
   async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomDataDto> {
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: chatRoom.roomId } });
+    const targetRoom = await this.findExistChatRoom(chatRoom.roomId);
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
@@ -135,7 +133,7 @@ export class ChatService {
   }
 
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
+    const targetRoom = await this.findExistChatRoom(invitedChatUser.roomId);
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
@@ -184,8 +182,7 @@ export class ChatService {
   }
 
   async changeChatRoomInfo(userId: number, changeRoomInfo: ChangeChatRoomDto) {
-    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: changeRoomInfo.roomId } });
-    if (!targetRoom) throw new NotFoundException('No such Chat room');
+    const targetRoom = await this.findExistChatRoom(changeRoomInfo.roomId);
     if (await this.isChannelDm(changeRoomInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -273,8 +270,7 @@ export class ChatService {
   }
 
   async exitChatRoom(userId: number, roomId: number) {
-    const targetRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
-    if (!targetRoom) throw new NotFoundException('can not exit from non existing room');
+    const targetRoom: ChatRoom = await this.findExistChatRoom(roomId);
     const exitUser = await this.findExistChatUser(roomId, userId);
     if (exitUser.role !== ChatRole.OWNER) {
       await this.leaveChatRoom(exitUser);
@@ -309,6 +305,17 @@ export class ChatService {
   }
 
   /**
+   * roomId를 통해 chat_room 테이블 내 채팅방을 찾습니다.
+   * @param roomId 찾고자 하는 채팅방 id
+   * @returns 성공시 해당 채팅방 Entity를 반환합니다. 실패시 NotFoundException을 던집니다.
+   */
+  async findExistChatRoom(roomId: number) {
+    const targetChatRoom: ChatRoom = await this.chatRoomRepository.findOneBy({ id: roomId });
+    if (!targetChatRoom) throw new NotFoundException('No Such ChatRoom');
+    return targetChatRoom;
+  }
+
+  /**
    * roomId, userId를 통해 해당 채팅 유저가 Ban을 당했는지 아닌지 확인합니다.
    * @param roomId 유저가 속한 방 id
    * @param chatUserId 유저 id
@@ -326,15 +333,15 @@ export class ChatService {
   }
 
   /**
-   * parameter의 ChatUser가 요청한 API를 실행할 수 있는지 판단합니다.
-   * 요청한 채팅 유저의 권한이 실행 권한보다 낮은 경우 ForbiddenException을 던집니다.
-   * @param targetUser API를 요청한 채팅 유저
-   * @param minimumRole API 실행을 위해 최소한으로 필요한 역할
+   * API를 요청한 ChatUser가 실행권한이 있는지 판단합니다.
+   * API 실행을 요청한 채팅 유저의 권한이  최소 실행 권한보다 낮은 경우 ForbiddenException을 던집니다.
+   * @param execChatUser API를 요청한 채팅 유저
+   * @param minimumRole API 실행을 위해 필요한 최소 실행 권한
    */
-  checkChatUserAuthority(targetUser: ChatUser, minimumRole: ChatRole) {
-    switch (targetUser.role) {
+  checkChatUserAuthority(execChatUser: ChatUser, minimumRole: ChatRole) {
+    switch (execChatUser.role) {
       case ChatRole.USER:
-        throw new BadRequestException('The User Has No Permission');
+        throw new ForbiddenException('The User Has No Permission');
       case ChatRole.ADMIN:
         if (minimumRole === ChatRole.OWNER) throw new ForbiddenException('The User Has No Permission');
         break;
