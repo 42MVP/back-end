@@ -84,26 +84,31 @@ export class ChatService {
       throw new BadRequestException('Wrong Password');
     }
     const prevChatUser = await this.checkChatUserBanned(chatRoom.roomId, userId);
-    if (!prevChatUser) {
-      const newChatUser: ChatUser = ChatUser.from(chatRoom.roomId, userId, ChatUserStatus.NONE, ChatRole.USER, null);
-      await this.chatUserRepository.save(newChatUser);
-    }
-    const userSocketId = this.userSocketRepository.find(userId);
-    if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOne({ where: { id: userId } })).userName;
-      this.chatGateway.joinChatRoom(userSocketId, userName, chatRoom.roomId);
+    if (prevChatUser) {
+      await this.joinChatRoom(prevChatUser);
+    } else {
+      const newChatUser: ChatUser = ChatUser.from(
+        chatRoom.roomId,
+        userId,
+        ChatUserStatus.NONE,
+        ChatRole.USER,
+        this.defaultMuteTime,
+      );
+      await this.joinChatRoom(newChatUser);
     }
     return this.getChatRoomDto(targetRoom);
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
-    const newChatOwner: ChatUser = ChatUser.from(roomId, userId, ChatUserStatus.NONE, ChatRole.OWNER, null);
+    const newChatOwner: ChatUser = ChatUser.from(
+      roomId,
+      userId,
+      ChatUserStatus.NONE,
+      ChatRole.OWNER,
+      this.defaultMuteTime,
+    );
     const createdOwner = await this.chatUserRepository.save(newChatOwner);
-    const userSocketId = this.userSocketRepository.find(userId);
-    if (typeof userSocketId === 'string') {
-      const ownerName = (await this.userRepository.findOne({ where: { id: createdOwner.userId } })).userName;
-      this.chatGateway.joinChatRoom(userSocketId, ownerName, roomId);
-    }
+    await this.joinChatRoom(createdOwner);
     return;
   }
 
@@ -138,20 +143,17 @@ export class ChatService {
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
     const prevChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
-    if (!prevChatUser) {
+    if (prevChatUser) {
+      await this.joinChatRoom(prevChatUser);
+    } else {
       const newChatUser: ChatUser = ChatUser.from(
-        invitedChatUser.roomId,
-        invitedChatUser.userId,
+        targetRoom.id,
+        targetUser.id,
         ChatUserStatus.NONE,
         ChatRole.USER,
         this.defaultMuteTime,
       );
-      await this.chatUserRepository.save(newChatUser);
-    }
-    const userSocketId = this.userSocketRepository.find(invitedChatUser.userId);
-    if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOne({ where: { id: invitedChatUser.userId } })).userName;
-      this.chatGateway.joinChatRoom(userSocketId, userName, invitedChatUser.roomId);
+      await this.joinChatRoom(newChatUser);
     }
     return this.getChatRoomDto(targetRoom);
   }
@@ -216,7 +218,6 @@ export class ChatService {
       targetUser.muteTime = newChatStatus.muteTime;
       this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
     } else {
-      // console.log(`${this.defaultMuteTime}`);
       targetUser.muteTime = this.defaultMuteTime;
       this.muteTimeRepository.delete(targetUser.userId);
     }
@@ -243,6 +244,15 @@ export class ChatService {
     if (typeof userSocket === 'string')
       this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
     return;
+  }
+
+  async joinChatRoom(chatUser: ChatUser) {
+    const userSocketId = this.userSocketRepository.find(chatUser.userId);
+    if (typeof userSocketId === 'string') {
+      const userName = (await this.userRepository.findOneBy({ id: chatUser.userId })).userName;
+      this.chatGateway.joinChatRoom(userSocketId, userName, chatUser.roomId);
+    }
+    await this.chatUserRepository.save(chatUser);
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
