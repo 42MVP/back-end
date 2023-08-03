@@ -198,6 +198,7 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatRole.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     const targetUser = await this.findExistChatUser(newChatRole.roomId, newChatRole.userId);
+    this.isValidChatUserToChange(targetUser);
     await this.isValidChatRoomToChage(newChatRole.roomId);
     targetUser.role = newChatRole.role;
     await this.chatUserRepository.save(targetUser);
@@ -225,6 +226,7 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser = await this.findExistChatUser(newChatStatus.roomId, newChatStatus.userId);
+    this.isValidChatUserToChange(targetUser);
     await this.isValidChatRoomToChage(newChatStatus.roomId);
     targetUser.status = newChatStatus.status;
     this.updateMuteTime(newChatStatus, targetUser);
@@ -347,5 +349,14 @@ export class ChatService {
   async isValidChatRoomToChage(roomId: number) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
     if (targetRoom.roomMode === ChatRoomMode.DIRECT) throw new BadRequestException('Can not change DM channel');
+  }
+
+  /**
+   * API의 타겟이 되는 유저가 상태 및 역할이 변경 가능한 유저인지 확인합니다.
+   * 상태 및 역할 변경이 불가능한 OWNER 인 경우 BadRequestException을 던집니다.
+   * @param targetChatUser API의 타겟이 되는 유저
+   */
+  isValidChatUserToChange(targetChatUser: ChatUser) {
+    if (targetChatUser.role === ChatRole.OWNER) throw new BadRequestException('Can Not Change Channel Owner');
   }
 }
