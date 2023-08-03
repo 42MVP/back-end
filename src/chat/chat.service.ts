@@ -85,13 +85,8 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    const targetChatUser = await this.chatUserRepository.findOne({
-      where: { roomId: chatRoom.roomId, userId: userId },
-    });
-    if (targetChatUser.status === ChatUserStatus.BAN) {
-      throw new BadRequestException('The user has been banned');
-    }
-    if (!targetChatUser) {
+    const prevChatUser = await this.checkChatUserBanned(chatRoom.roomId, userId);
+    if (!prevChatUser) {
       const newChatUser: ChatUser = ChatUser.from(chatRoom.roomId, userId, ChatUserStatus.NONE, ChatRole.USER, null);
       await this.chatUserRepository.save(newChatUser);
     }
@@ -143,13 +138,8 @@ export class ChatService {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
-    const targetChatUser = await this.chatUserRepository.findOne({
-      where: { roomId: invitedChatUser.roomId, userId: invitedChatUser.userId },
-    });
-    if (targetChatUser && targetChatUser.status === ChatUserStatus.BAN) {
-      throw new BadRequestException('The user has been banned');
-    }
-    if (!targetChatUser) {
+    const prevChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
+    if (!prevChatUser) {
       const newChatUser: ChatUser = ChatUser.from(
         invitedChatUser.roomId,
         invitedChatUser.userId,
@@ -326,6 +316,23 @@ export class ChatService {
       where: { roomId: roomId, userId: chatUserId },
     });
     if (!targetChatUser) throw new NotFoundException('No Such ChatUser');
+    return targetChatUser;
+  }
+
+  /**
+   * roomId, userId를 통해 해당 채팅 유저가 Ban을 당했는지 아닌지 확인합니다.
+   * @param roomId 유저가 속한 방 id
+   * @param chatUserId 유저 id
+   * @returns 해당 채팅 유저가 존재한다면 그 유저의 Entity를 반환합니다. Ban을 당한 유저인 경우 BadRequestException을 던집니다.
+   * 없는 유저라면 null을 반환합니다.
+   */
+  async checkChatUserBanned(roomId: number, chatUserId: number) {
+    const targetChatUser: ChatUser = await this.chatUserRepository.findOne({
+      where: { roomId: roomId, userId: chatUserId },
+    });
+    if (targetChatUser) {
+      if (targetChatUser.status === ChatUserStatus.BAN) throw new BadRequestException('The User Has Been Banned');
+    }
     return targetChatUser;
   }
 }
