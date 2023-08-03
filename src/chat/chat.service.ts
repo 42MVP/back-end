@@ -176,16 +176,9 @@ export class ChatService {
     return searchResult;
   }
 
-  async isChannelDm(roomId: number) {
-    const targetChannel = await this.chatRoomRepository.findOne({ where: { id: roomId } });
-    return targetChannel.roomMode === ChatRoomMode.DIRECT ? true : false;
-  }
-
   async changeChatRoomInfo(userId: number, changeRoomInfo: ChangeChatRoomDto) {
     const targetRoom = await this.findExistChatRoom(changeRoomInfo.roomId);
-    if (await this.isChannelDm(changeRoomInfo.roomId)) {
-      throw new BadRequestException('Can not change DM channel info');
-    }
+    await this.isValidChatRoomToChage(targetRoom.id);
     const execUser = await this.findExistChatUser(changeRoomInfo.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     if (changeRoomInfo.roomMode) targetRoom.roomMode = changeRoomInfo.roomMode;
@@ -205,9 +198,7 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatRole.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     const targetUser = await this.findExistChatUser(newChatRole.roomId, newChatRole.userId);
-    if (await this.isChannelDm(newChatRole.roomId)) {
-      throw new BadRequestException('Can not change DM channel info');
-    }
+    await this.isValidChatRoomToChage(newChatRole.roomId);
     targetUser.role = newChatRole.role;
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
@@ -234,9 +225,7 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser = await this.findExistChatUser(newChatStatus.roomId, newChatStatus.userId);
-    if (await this.isChannelDm(newChatStatus.roomId)) {
-      throw new BadRequestException('Can not change DM channel info');
-    }
+    await this.isValidChatRoomToChage(newChatStatus.roomId);
     targetUser.status = newChatStatus.status;
     this.updateMuteTime(newChatStatus, targetUser);
     if (targetUser.status === ChatUserStatus.KICK) {
@@ -348,5 +337,15 @@ export class ChatService {
       case ChatRole.OWNER:
         break;
     }
+  }
+
+  /**
+   * API의 타겟이 되는 채팅방이 정보 변경이 가능한 채팅방 (DM이 아닌 방)인지 판단 합니다.
+   * parameter로 들어온 채팅방 id가 정보 변경이 불가능한 DM방인 경우 BadRequestException을 던집니다.
+   * @param roomId API의 타겟이 되는 채팅방 id
+   */
+  async isValidChatRoomToChage(roomId: number) {
+    const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
+    if (targetRoom.roomMode === ChatRoomMode.DIRECT) throw new BadRequestException('Can not change DM channel');
   }
 }
