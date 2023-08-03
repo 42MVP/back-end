@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../common/entities/chatroom.entity';
@@ -137,6 +137,7 @@ export class ChatService {
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
+    this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
     const prevChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
     if (!prevChatUser) {
@@ -189,36 +190,24 @@ export class ChatService {
       throw new BadRequestException('Can not change DM channel info');
     }
     const execUser = await this.findExistChatUser(changeRoomInfo.roomId, userId);
-    if (execUser.role !== ChatRole.OWNER) {
-      throw new BadRequestException('Permission Denied');
-    }
+    this.checkChatUserAuthority(execUser, ChatRole.OWNER);
+    if (changeRoomInfo.roomMode) targetRoom.roomMode = changeRoomInfo.roomMode;
     if (changeRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (typeof changeRoomInfo.password !== 'string')
         throw new BadRequestException('Need a password for protected room');
+      targetRoom.password = changeRoomInfo.password;
     }
     if (changeRoomInfo.roomMode !== ChatRoomMode.PROTECTED) {
-      changeRoomInfo.password = null;
+      targetRoom.password = null;
     }
-    if (changeRoomInfo.roomMode) targetRoom.roomMode = changeRoomInfo.roomMode;
-    if (changeRoomInfo.password) targetRoom.password = changeRoomInfo.password;
     await this.chatRoomRepository.save(targetRoom);
-    return;
-  }
-
-  checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {
-    if (execUser.role === ChatRole.USER) {
-      throw new BadRequestException('Permission Denied');
-    }
-    if (targetUser.role === ChatRole.OWNER) {
-      throw new BadRequestException('Invalid Role to Change');
-    }
     return;
   }
 
   async changeChatUserRole(userId: number, newChatRole: UpdateChatRoleDto) {
     const execUser = await this.findExistChatUser(newChatRole.roomId, userId);
+    this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     const targetUser = await this.findExistChatUser(newChatRole.roomId, newChatRole.userId);
-    this.checkUserAutority(execUser, targetUser);
     if (await this.isChannelDm(newChatRole.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -246,8 +235,8 @@ export class ChatService {
 
   async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
+    this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser = await this.findExistChatUser(newChatStatus.roomId, newChatStatus.userId);
-    this.checkUserAutority(execUser, targetUser);
     if (await this.isChannelDm(newChatStatus.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
@@ -334,5 +323,23 @@ export class ChatService {
       if (targetChatUser.status === ChatUserStatus.BAN) throw new BadRequestException('The User Has Been Banned');
     }
     return targetChatUser;
+  }
+
+  /**
+   * parameter의 ChatUser가 요청한 API를 실행할 수 있는지 판단합니다.
+   * 요청한 채팅 유저의 권한이 실행 권한보다 낮은 경우 ForbiddenException을 던집니다.
+   * @param targetUser API를 요청한 채팅 유저
+   * @param minimumRole API 실행을 위해 최소한으로 필요한 역할
+   */
+  checkChatUserAuthority(targetUser: ChatUser, minimumRole: ChatRole) {
+    switch (targetUser.role) {
+      case ChatRole.USER:
+        throw new BadRequestException('The User Has No Permission');
+      case ChatRole.ADMIN:
+        if (minimumRole === ChatRole.OWNER) throw new ForbiddenException('The User Has No Permission');
+        break;
+      case ChatRole.OWNER:
+        break;
+    }
   }
 }
