@@ -88,13 +88,11 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    const isExistUser = await this.chatUserRepository.findOne({
-      where: { roomId: chatRoom.roomId, userId: userId },
-    });
-    if (isExistUser && isExistUser.status === ChatUserStatus.BAN) {
+    const targetChatUser = await this.findExistChatUser(chatRoom.roomId, userId);
+    if (targetChatUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
-    if (!isExistUser) {
+    if (!targetChatUser) {
       const newChatUser: ChatUser = ChatUser.from(chatRoom.roomId, userId, ChatUserStatus.NONE, ChatRole.USER, null);
       await this.chatUserRepository.save(newChatUser);
     }
@@ -147,13 +145,11 @@ export class ChatService {
 
   async inviteChatUser(userId: number, invitedChatUser: FindChatUserDto) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: invitedChatUser.roomId } });
-    const isExistUser = await this.chatUserRepository.findOne({
-      where: { roomId: invitedChatUser.roomId, userId: userId },
-    });
-    if (isExistUser && isExistUser.status === ChatUserStatus.BAN) {
+    const targetChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
+    if (targetChatUser.status === ChatUserStatus.BAN) {
       throw new BadRequestException('The user has been banned');
     }
-    if (!isExistUser) {
+    if (!targetChatUser) {
       const newChatUser: ChatUser = ChatUser.from(
         invitedChatUser.roomId,
         invitedChatUser.userId,
@@ -203,12 +199,7 @@ export class ChatService {
     if (await this.isChannelDm(changeRoomInfo.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
     }
-    const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: changeRoomInfo.roomId, userId: userId },
-    });
-    if (!execUser) {
-      throw new NotFoundException('No Such UserId or RoomId');
-    }
+    const execUser = await this.findExistChatUser(changeRoomInfo.roomId, userId);
     if (execUser.role !== ChatRole.OWNER) {
       throw new BadRequestException('Permission Denied');
     }
@@ -227,9 +218,6 @@ export class ChatService {
   }
 
   checkUserAutority(execUser: ChatUser, targetUser: ChatUser) {
-    if (!execUser || !targetUser) {
-      throw new NotFoundException('No Such User');
-    }
     if (execUser.role === ChatRole.USER) {
       throw new BadRequestException('Permission Denied');
     }
@@ -240,12 +228,8 @@ export class ChatService {
   }
 
   async changeChatUserRole(userId: number, newChatRole: UpdateChatRoleDto) {
-    const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatRole.roomId, userId: userId },
-    });
-    const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatRole.roomId, userId: newChatRole.userId },
-    });
+    const execUser = await this.findExistChatUser(newChatRole.roomId, userId);
+    const targetUser = await this.findExistChatUser(newChatRole.roomId, newChatRole.userId);
     this.checkUserAutority(execUser, targetUser);
     if (await this.isChannelDm(newChatRole.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
@@ -273,12 +257,8 @@ export class ChatService {
   }
 
   async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
-    const execUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatStatus.roomId, userId: userId },
-    });
-    const targetUser = await this.chatUserRepository.findOne({
-      where: { roomId: newChatStatus.roomId, userId: newChatStatus.userId },
-    });
+    const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
+    const targetUser = await this.findExistChatUser(newChatStatus.roomId, newChatStatus.userId);
     this.checkUserAutority(execUser, targetUser);
     if (await this.isChannelDm(newChatStatus.roomId)) {
       throw new BadRequestException('Can not change DM channel info');
@@ -318,14 +298,25 @@ export class ChatService {
   async exitChatRoom(userId: number, roomId: number) {
     const targetRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
     if (!targetRoom) throw new NotFoundException('can not exit from non existing room');
-    const exitUser = await this.chatUserRepository.findOne({
-      where: { roomId: roomId, userId: userId },
-    });
-    if (!exitUser) throw new NotFoundException('Can not find target user');
+    const exitUser = await this.findExistChatUser(roomId, userId);
     if (exitUser.role !== ChatRole.OWNER) {
       await this.leaveChatRoom(exitUser);
     } else {
       await this.destroyChatRoom(targetRoom);
     }
+  }
+
+  /**
+   * roomId, userId를 통해 chat_user 테이블 내 채팅 유저를 찾습니다.
+   * @param roomId 유저가 속한 방 id
+   * @param chatUserId 유저 id
+   * @returns 성공시 해당 채팅유저의 Entity를 반환합니다. 실패시 NotFoundException을 던집니다.
+   */
+  async findExistChatUser(roomId: number, chatUserId: number) {
+    const targetChatUser: ChatUser = await this.chatUserRepository.findOne({
+      where: { roomId: roomId, userId: chatUserId },
+    });
+    if (!targetChatUser) throw new NotFoundException('No Such ChatUser');
+    return targetChatUser;
   }
 }
