@@ -68,11 +68,8 @@ export class ChatService {
     return chatRoomData;
   }
 
-  async getChatRoomList(userId: number, userName: string): Promise<ChatRoomDataDto[]> {
+  async getChatRoomList(userId: number): Promise<ChatRoomDataDto[]> {
     const targetUser = await this.findExistUser(userId);
-    if (targetUser.userName !== userName) {
-      throw new BadRequestException('user name does not match to target user');
-    }
     const userChatProfiles = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
     const chatRoomList: ChatRoomDataDto[] = await Promise.all(
       userChatProfiles.map(async (userChatProfile: ChatUser) => await this.getChatRoomDto(userChatProfile)),
