@@ -85,7 +85,7 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    this.checkUserAlreadyEntered(chatRoom.roomId, userId);
+    await this.checkUserAlreadyEntered(chatRoom.roomId, userId);
     const newChatUser: ChatUser = ChatUser.from(
       chatRoom.roomId,
       userId,
@@ -140,7 +140,7 @@ export class ChatService {
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
-    this.checkUserAlreadyEntered(invitedChatUser.roomId, invitedChatUser.userId);
+    await this.checkUserAlreadyEntered(invitedChatUser.roomId, invitedChatUser.userId);
     const newChatUser: ChatUser = ChatUser.from(
       targetRoom.id,
       targetUser.id,
@@ -368,7 +368,7 @@ export class ChatService {
 
   async checkUserAlreadyEntered(roomId: number, userId: number) {
     const targetUser: ChatUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: userId } });
-    if (targetUser) throw new BadRequestException('The User Already Exist In The ChatRoom');
+    if (targetUser) throw new BadRequestException('The User Has Been Already Entered');
   }
 
   /**
