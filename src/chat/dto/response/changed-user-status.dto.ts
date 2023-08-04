@@ -7,4 +7,9 @@ export class ChangedUserStatusDto {
 
   @IsNotEmpty()
   status: ChatUserStatus;
+
+  constructor(userName: string, status: ChatUserStatus) {
+    this.userName = userName;
+    this.status = status;
+  }
 }
