@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatRoom } from '../common/entities/chatroom.entity';
 import { ChatUser } from '../common/entities/chatuser.entity';
@@ -41,24 +41,29 @@ export class ChatService {
     return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
   }
 
-  async getChatUserList(roomId: number, commonStatus: ChatUserStatus): Promise<ChatUserDto[]> {
-    const chatUsersWithCommonStatus: ChatUser[] = await this.chatUserRepository.find({
-      where: { roomId: roomId, status: commonStatus },
-    });
+  async getChatUserList(chatUsers: ChatUser[], excludeId: number, isBanned: boolean): Promise<ChatUserDto[]> {
+    chatUsers = isBanned
+      ? chatUsers.filter((chatUser: ChatUser) => chatUser.status === ChatUserStatus.BAN)
+      : chatUsers.filter((chatUser: ChatUser) => chatUser.status !== ChatUserStatus.BAN);
     const chatUserList: ChatUserDto[] = await Promise.all(
-      chatUsersWithCommonStatus.map((chatUser: ChatUser) => this.getChatUserDto(chatUser)),
+      chatUsers.map((chatUser: ChatUser) => this.getChatUserDto(chatUser)),
     );
     return chatUserList;
   }
 
-  async getChatRoomDto(targetRoom: ChatRoom): Promise<ChatRoomDataDto> {
+  async getChatRoomDto(execChatUser: ChatUser): Promise<ChatRoomDataDto> {
+    const chatRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: execChatUser.roomId } });
+    const chatUsers: ChatUser[] = await this.chatUserRepository.find({
+      where: { roomId: execChatUser.roomId, userId: Not(execChatUser.userId) },
+    });
     const chatRoomData = new ChatRoomDataDto(
-      targetRoom.id,
-      targetRoom.roomName,
-      targetRoom.roomMode,
-      await this.getChatUserList(targetRoom.id, ChatUserStatus.NONE),
-      await this.getChatUserList(targetRoom.id, ChatUserStatus.BAN),
-      await this.getChatUserList(targetRoom.id, ChatUserStatus.MUTE),
+      chatRoom.id,
+      chatRoom.roomName,
+      chatRoom.roomMode === ChatRoomMode.DIRECT ? false : true,
+      chatRoom.roomMode,
+      await this.getChatUserDto(execChatUser),
+      await this.getChatUserList(chatUsers, execChatUser.userId, false),
+      await this.getChatUserList(chatUsers, execChatUser.userId, true),
     );
     return chatRoomData;
   }
@@ -69,11 +74,8 @@ export class ChatService {
       throw new BadRequestException('user name does not match to target user');
     }
     const userChatProfiles = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
-    const userChatRooms: ChatRoom[] = await Promise.all(
-      userChatProfiles.map(async (chatUser: ChatUser) => await this.findExistChatRoom(chatUser.roomId)),
-    );
     const chatRoomList: ChatRoomDataDto[] = await Promise.all(
-      userChatRooms.map(async (chatRoom: ChatRoom) => await this.getChatRoomDto(chatRoom)),
+      userChatProfiles.map(async (userChatProfile: ChatUser) => await this.getChatRoomDto(userChatProfile)),
     );
     return chatRoomList;
   }
@@ -86,17 +88,16 @@ export class ChatService {
     const prevChatUser = await this.checkChatUserBanned(chatRoom.roomId, userId);
     if (prevChatUser) {
       await this.joinChatRoom(prevChatUser);
-    } else {
-      const newChatUser: ChatUser = ChatUser.from(
-        chatRoom.roomId,
-        userId,
-        ChatUserStatus.NONE,
-        ChatRole.USER,
-        this.defaultMuteTime,
-      );
-      await this.joinChatRoom(newChatUser);
     }
-    return this.getChatRoomDto(targetRoom);
+    const newChatUser: ChatUser = ChatUser.from(
+      chatRoom.roomId,
+      userId,
+      ChatUserStatus.NONE,
+      ChatRole.USER,
+      this.defaultMuteTime,
+    );
+    await this.joinChatRoom(newChatUser);
+    return this.getChatRoomDto(newChatUser);
   }
 
   async enterChatOwner(roomId: number, userId: number): Promise<void> {
@@ -145,17 +146,16 @@ export class ChatService {
     const prevChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
     if (prevChatUser) {
       await this.joinChatRoom(prevChatUser);
-    } else {
-      const newChatUser: ChatUser = ChatUser.from(
-        targetRoom.id,
-        targetUser.id,
-        ChatUserStatus.NONE,
-        ChatRole.USER,
-        this.defaultMuteTime,
-      );
-      await this.joinChatRoom(newChatUser);
     }
-    return this.getChatRoomDto(targetRoom);
+    const newChatUser: ChatUser = ChatUser.from(
+      targetRoom.id,
+      targetUser.id,
+      ChatUserStatus.NONE,
+      ChatRole.USER,
+      this.defaultMuteTime,
+    );
+    await this.joinChatRoom(newChatUser);
+    return this.getChatRoomDto(newChatUser);
   }
 
   async findFreshChannels(userId: number) {
