@@ -85,9 +85,8 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    const prevChatUser = await this.checkChatUserBanned(chatRoom.roomId, userId);
-    if (prevChatUser) {
-      await this.joinChatRoom(prevChatUser);
+    if (await this.chatUserRepository.findOne({ where: { roomId: chatRoom.roomId, userId: userId } })) {
+      throw new BadRequestException('The User Already Exist In The ChatRoom');
     }
     const newChatUser: ChatUser = ChatUser.from(
       chatRoom.roomId,
@@ -143,17 +142,10 @@ export class ChatService {
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
-    const prevChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
-    if (prevChatUser) {
-      await this.joinChatRoom(prevChatUser);
-    }
-    const newChatUser: ChatUser = ChatUser.from(
-      targetRoom.id,
-      targetUser.id,
-      ChatUserStatus.NONE,
-      ChatRole.USER,
-      this.defaultMuteTime,
-    );
+    const prevChatUser: ChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
+    const newChatUser: ChatUser = prevChatUser
+      ? prevChatUser
+      : ChatUser.from(targetRoom.id, targetUser.id, ChatUserStatus.NONE, ChatRole.USER, this.defaultMuteTime);
     await this.joinChatRoom(newChatUser);
     return this.getChatRoomDto(newChatUser);
   }
