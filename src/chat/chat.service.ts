@@ -203,36 +203,75 @@ export class ChatService {
     return;
   }
 
-  updateMuteTime(newChatStatus: UpdateChatStatusDto, targetUser: ChatUser) {
+  async kickChatUser(userId: number, kickChatUser: UpdateChatStatusDto) {
+    const targetUser = await this.findExistChatUser(kickChatUser.roomId, kickChatUser.userId);
+    this.isValidChatUserToChange(targetUser);
+    await this.chatUserRepository.remove(targetUser);
+  }
+
+  async banChatUser(userId: number, banChatUser: UpdateChatStatusDto) {
+    const targetChatUser: ChatUser = await this.chatUserRepository.findOne({
+      where: { roomId: banChatUser.roomId, userId: banChatUser.userId },
+    });
+    const userToBan: ChatUser = targetChatUser
+      ? targetChatUser
+      : ChatUser.from(banChatUser.roomId, banChatUser.userId, ChatUserStatus.BAN, ChatRole.USER, this.defaultMuteTime);
+    this.isValidChatUserToChange(userToBan);
+    userToBan.status = banChatUser.status;
+    await this.chatUserRepository.save(userToBan);
+  }
+
+  async muteChatUser(userId: number, muteChatUser: UpdateChatStatusDto) {
+    const targetUser = await this.findExistChatUser(muteChatUser.roomId, muteChatUser.userId);
+    this.isValidChatUserToChange(targetUser);
+    targetUser.status = muteChatUser.status;
+    targetUser.muteTime = this.updateMuteTime(targetUser, muteChatUser);
+    await this.chatUserRepository.save(targetUser);
+  }
+
+  async revertChatStatus(userId: number, revertStatus: UpdateChatStatusDto) {
+    const targetUser = await this.findExistChatUser(revertStatus.roomId, revertStatus.userId);
+    this.isValidChatUserToChange(targetUser);
+    targetUser.status = revertStatus.status;
+    targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
+    await this.chatUserRepository.save(targetUser);
+  }
+
+  updateMuteTime(targetUser: ChatUser, newChatStatus: UpdateChatStatusDto): Date {
     if (newChatStatus.status == ChatUserStatus.MUTE) {
       if (!newChatStatus.muteTime || typeof newChatStatus.muteTime === 'undefined')
         throw new BadRequestException('Need limited mute time');
-      targetUser.muteTime = newChatStatus.muteTime;
       this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+      return newChatStatus.muteTime;
     } else {
-      targetUser.muteTime = this.defaultMuteTime;
       this.muteTimeRepository.delete(targetUser.userId);
+      return this.defaultMuteTime;
     }
   }
 
   async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
-    const targetUser = await this.findExistChatUser(newChatStatus.roomId, newChatStatus.userId);
-    this.isValidChatUserToChange(targetUser);
     await this.isValidChatRoomToChage(newChatStatus.roomId);
-    targetUser.status = newChatStatus.status;
-    this.updateMuteTime(newChatStatus, targetUser);
-    if (targetUser.status === ChatUserStatus.KICK) {
-      await this.chatUserRepository.remove(targetUser);
-    } else {
-      Object.assign(targetUser, targetUser);
-      await this.chatUserRepository.save(targetUser);
+    switch (newChatStatus.status) {
+      case ChatUserStatus.KICK:
+        await this.kickChatUser(userId, newChatStatus);
+        break;
+      case ChatUserStatus.BAN:
+        await this.banChatUser(userId, newChatStatus);
+        break;
+      case ChatUserStatus.MUTE:
+        await this.muteChatUser(userId, newChatStatus);
+        break;
+      case ChatUserStatus.NONE:
+        await this.revertChatStatus(userId, newChatStatus);
+        break;
     }
-    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto();
-    changedStatus.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
-    changedStatus.status = targetUser.status;
-    const userSocket = this.userSocketRepository.find(targetUser.userId);
+    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto(
+      (await this.userRepository.findOne({ where: { id: newChatStatus.userId } })).userName,
+      newChatStatus.status,
+    );
+    const userSocket = this.userSocketRepository.find(newChatStatus.userId);
     if (typeof userSocket === 'string')
       this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
     return;
