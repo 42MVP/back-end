@@ -85,9 +85,7 @@ export class ChatService {
     if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
       throw new BadRequestException('Wrong Password');
     }
-    if (await this.chatUserRepository.findOne({ where: { roomId: chatRoom.roomId, userId: userId } })) {
-      throw new BadRequestException('The User Already Exist In The ChatRoom');
-    }
+    this.checkUserAlreadyEntered(chatRoom.roomId, userId);
     const newChatUser: ChatUser = ChatUser.from(
       chatRoom.roomId,
       userId,
@@ -142,10 +140,14 @@ export class ChatService {
     const execUser: ChatUser = await this.findExistChatUser(invitedChatUser.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     const targetUser: User = await this.findExistUser(invitedChatUser.userId);
-    const prevChatUser: ChatUser = await this.checkChatUserBanned(invitedChatUser.roomId, targetUser.id);
-    const newChatUser: ChatUser = prevChatUser
-      ? prevChatUser
-      : ChatUser.from(targetRoom.id, targetUser.id, ChatUserStatus.NONE, ChatRole.USER, this.defaultMuteTime);
+    this.checkUserAlreadyEntered(invitedChatUser.roomId, invitedChatUser.userId);
+    const newChatUser: ChatUser = ChatUser.from(
+      targetRoom.id,
+      targetUser.id,
+      ChatUserStatus.NONE,
+      ChatRole.USER,
+      this.defaultMuteTime,
+    );
     await this.joinChatRoom(newChatUser);
     return this.getChatRoomDto(newChatUser);
   }
@@ -362,6 +364,11 @@ export class ChatService {
       if (targetChatUser.status === ChatUserStatus.BAN) throw new BadRequestException('The User Has Been Banned');
     }
     return targetChatUser;
+  }
+
+  async checkUserAlreadyEntered(roomId: number, userId: number) {
+    const targetUser: ChatUser = await this.chatUserRepository.findOne({ where: { roomId: roomId, userId: userId } });
+    if (targetUser) throw new BadRequestException('The User Already Exist In The ChatRoom');
   }
 
   /**
