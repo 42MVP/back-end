@@ -8,7 +8,7 @@ export class ChatUserDto {
 
   @IsNotEmpty()
   @IsString()
-  username: string;
+  name: string;
 
   @IsNotEmpty()
   @IsString()
@@ -19,9 +19,9 @@ export class ChatUserDto {
 
   abongTime: Date;
 
-  constructor(id: number, userName: string, avatarUrl: string, role: ChatRole, abongTime: Date) {
+  constructor(id: number, name: string, avatarUrl: string, role: ChatRole, abongTime: Date) {
     this.id = id;
-    this.username = userName;
+    this.name = name;
     this.avatarURL = avatarUrl;
     this.role = role;
     this.abongTime = abongTime;
