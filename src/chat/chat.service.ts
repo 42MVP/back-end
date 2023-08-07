@@ -206,13 +206,13 @@ export class ChatService {
     return;
   }
 
-  async kickChatUser(userId: number, kickChatUser: UpdateChatStatusDto) {
+  async kickChatUser(kickChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(kickChatUser.roomId, kickChatUser.userId);
     this.isValidChatUserToChange(targetUser);
     await this.chatUserRepository.remove(targetUser);
   }
 
-  async banChatUser(userId: number, banChatUser: UpdateChatStatusDto) {
+  async banChatUser(banChatUser: UpdateChatStatusDto) {
     const targetChatUser: ChatUser = await this.chatUserRepository.findOne({
       where: { roomId: banChatUser.roomId, userId: banChatUser.userId },
     });
@@ -224,7 +224,7 @@ export class ChatService {
     await this.chatUserRepository.save(userToBan);
   }
 
-  async muteChatUser(userId: number, muteChatUser: UpdateChatStatusDto) {
+  async muteChatUser(muteChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(muteChatUser.roomId, muteChatUser.userId);
     this.isValidChatUserToChange(targetUser);
     targetUser.status = muteChatUser.status;
@@ -232,7 +232,7 @@ export class ChatService {
     await this.chatUserRepository.save(targetUser);
   }
 
-  async revertChatStatus(userId: number, revertStatus: UpdateChatStatusDto) {
+  async revertChatStatus(revertStatus: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(revertStatus.roomId, revertStatus.userId);
     this.isValidChatUserToChange(targetUser);
     targetUser.status = revertStatus.status;
@@ -258,16 +258,16 @@ export class ChatService {
     await this.isValidChatRoomToChage(newChatStatus.roomId);
     switch (newChatStatus.status) {
       case ChatUserStatus.KICK:
-        await this.kickChatUser(userId, newChatStatus);
+        await this.kickChatUser(newChatStatus);
         break;
       case ChatUserStatus.BAN:
-        await this.banChatUser(userId, newChatStatus);
+        await this.banChatUser(newChatStatus);
         break;
       case ChatUserStatus.MUTE:
-        await this.muteChatUser(userId, newChatStatus);
+        await this.muteChatUser(newChatStatus);
         break;
       case ChatUserStatus.NONE:
-        await this.revertChatStatus(userId, newChatStatus);
+        await this.revertChatStatus(newChatStatus);
         break;
     }
     const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto(
