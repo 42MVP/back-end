@@ -19,6 +19,7 @@ import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ChatService {
@@ -41,7 +42,7 @@ export class ChatService {
     return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
   }
 
-  async getChatUserList(chatUsers: ChatUser[], excludeId: number, isBanned: boolean): Promise<ChatUserDto[]> {
+  async getChatUserList(chatUsers: ChatUser[], isBanned: boolean): Promise<ChatUserDto[]> {
     chatUsers = isBanned
       ? chatUsers.filter((chatUser: ChatUser) => chatUser.status === ChatUserStatus.BAN)
       : chatUsers.filter((chatUser: ChatUser) => chatUser.status !== ChatUserStatus.BAN);
@@ -62,8 +63,8 @@ export class ChatService {
       chatRoom.roomMode === ChatRoomMode.DIRECT ? false : true,
       chatRoom.roomMode,
       await this.getChatUserDto(execChatUser),
-      await this.getChatUserList(chatUsers, execChatUser.userId, false),
-      await this.getChatUserList(chatUsers, execChatUser.userId, true),
+      await this.getChatUserList(chatUsers, false),
+      await this.getChatUserList(chatUsers, true),
     );
     return chatRoomData;
   }
@@ -79,8 +80,11 @@ export class ChatService {
 
   async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomDataDto> {
     const targetRoom = await this.findExistChatRoom(chatRoom.roomId);
-    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
-      throw new BadRequestException('Wrong Password');
+    if (targetRoom.roomMode === ChatRoomMode.PROTECTED) {
+      if (typeof chatRoom.password !== 'string') throw new BadRequestException('Need a password to enter the chatroom');
+      if (bcrypt.compareSync(chatRoom.password, targetRoom.password) == false) {
+        throw new BadRequestException('Incorrect Password');
+      }
     }
     await this.checkUserAlreadyEntered(chatRoom.roomId, userId);
     const newChatUser: ChatUser = ChatUser.from(
@@ -202,13 +206,13 @@ export class ChatService {
     return;
   }
 
-  async kickChatUser(userId: number, kickChatUser: UpdateChatStatusDto) {
+  async kickChatUser(kickChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(kickChatUser.roomId, kickChatUser.userId);
     this.isValidChatUserToChange(targetUser);
     await this.chatUserRepository.remove(targetUser);
   }
 
-  async banChatUser(userId: number, banChatUser: UpdateChatStatusDto) {
+  async banChatUser(banChatUser: UpdateChatStatusDto) {
     const targetChatUser: ChatUser = await this.chatUserRepository.findOne({
       where: { roomId: banChatUser.roomId, userId: banChatUser.userId },
     });
@@ -220,7 +224,7 @@ export class ChatService {
     await this.chatUserRepository.save(userToBan);
   }
 
-  async muteChatUser(userId: number, muteChatUser: UpdateChatStatusDto) {
+  async muteChatUser(muteChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(muteChatUser.roomId, muteChatUser.userId);
     this.isValidChatUserToChange(targetUser);
     targetUser.status = muteChatUser.status;
@@ -228,7 +232,7 @@ export class ChatService {
     await this.chatUserRepository.save(targetUser);
   }
 
-  async revertChatStatus(userId: number, revertStatus: UpdateChatStatusDto) {
+  async revertChatStatus(revertStatus: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(revertStatus.roomId, revertStatus.userId);
     this.isValidChatUserToChange(targetUser);
     targetUser.status = revertStatus.status;
@@ -254,16 +258,16 @@ export class ChatService {
     await this.isValidChatRoomToChage(newChatStatus.roomId);
     switch (newChatStatus.status) {
       case ChatUserStatus.KICK:
-        await this.kickChatUser(userId, newChatStatus);
+        await this.kickChatUser(newChatStatus);
         break;
       case ChatUserStatus.BAN:
-        await this.banChatUser(userId, newChatStatus);
+        await this.banChatUser(newChatStatus);
         break;
       case ChatUserStatus.MUTE:
-        await this.muteChatUser(userId, newChatStatus);
+        await this.muteChatUser(newChatStatus);
         break;
       case ChatUserStatus.NONE:
-        await this.revertChatStatus(userId, newChatStatus);
+        await this.revertChatStatus(newChatStatus);
         break;
     }
     const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto(
