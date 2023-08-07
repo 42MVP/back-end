@@ -42,7 +42,7 @@ export class ChatService {
     return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
   }
 
-  async getChatUserList(chatUsers: ChatUser[], excludeId: number, isBanned: boolean): Promise<ChatUserDto[]> {
+  async getChatUserList(chatUsers: ChatUser[], isBanned: boolean): Promise<ChatUserDto[]> {
     chatUsers = isBanned
       ? chatUsers.filter((chatUser: ChatUser) => chatUser.status === ChatUserStatus.BAN)
       : chatUsers.filter((chatUser: ChatUser) => chatUser.status !== ChatUserStatus.BAN);
@@ -63,8 +63,8 @@ export class ChatService {
       chatRoom.roomMode === ChatRoomMode.DIRECT ? false : true,
       chatRoom.roomMode,
       await this.getChatUserDto(execChatUser),
-      await this.getChatUserList(chatUsers, execChatUser.userId, false),
-      await this.getChatUserList(chatUsers, execChatUser.userId, true),
+      await this.getChatUserList(chatUsers, false),
+      await this.getChatUserList(chatUsers, true),
     );
     return chatRoomData;
   }
