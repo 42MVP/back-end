@@ -19,6 +19,7 @@ import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ChatService {
@@ -79,8 +80,11 @@ export class ChatService {
 
   async enterChatRoom(userId: number, chatRoom: EnterChatRoomDto): Promise<ChatRoomDataDto> {
     const targetRoom = await this.findExistChatRoom(chatRoom.roomId);
-    if (targetRoom.roomMode === ChatRoomMode.PROTECTED && targetRoom.password !== chatRoom.password) {
-      throw new BadRequestException('Wrong Password');
+    if (targetRoom.roomMode === ChatRoomMode.PROTECTED) {
+      if (typeof chatRoom.password !== 'string') throw new BadRequestException('Need a password to enter the chatroom');
+      if (bcrypt.compareSync(chatRoom.password, targetRoom.password) == false) {
+        throw new BadRequestException('Incorrect Password');
+      }
     }
     await this.checkUserAlreadyEntered(chatRoom.roomId, userId);
     const newChatUser: ChatUser = ChatUser.from(

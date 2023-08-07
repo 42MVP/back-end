@@ -1,5 +1,6 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { ChatRoomMode } from '../enums';
+import * as bcrypt from 'bcrypt';
 
 @Entity()
 export class ChatRoom extends BaseEntity {
@@ -21,5 +22,11 @@ export class ChatRoom extends BaseEntity {
     chatRoom.roomMode = roomMode;
     chatRoom.password = password;
     return chatRoom;
+  }
+
+  @BeforeInsert()
+  private insertPassword() {
+    const salt = bcrypt.genSaltSync();
+    this.password = bcrypt.hashSync(this.password, salt);
   }
 }
