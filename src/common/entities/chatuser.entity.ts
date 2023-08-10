@@ -25,7 +25,7 @@ export class ChatUser extends BaseEntity {
   @Column({ type: 'enum', enum: ChatRole })
   role: ChatRole;
 
-  @Column({ type: Date, nullable: true })
+  @Column({ type: 'timestamptz', nullable: true })
   muteTime: Date;
 
   static from(roomId: number, userId: number, status: ChatUserStatus, role: ChatRole, muteTime: Date) {
