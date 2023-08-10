@@ -227,6 +227,7 @@ export class ChatService {
   async muteChatUser(muteChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(muteChatUser.roomId, muteChatUser.userId);
     this.isValidChatUserToChange(targetUser);
+
     targetUser.status = muteChatUser.status;
     targetUser.muteTime = this.updateMuteTime(targetUser, muteChatUser);
     await this.chatUserRepository.save(targetUser);
@@ -284,7 +285,7 @@ export class ChatService {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
       const userName = (await this.userRepository.findOneBy({ id: chatUser.userId })).userName;
-      this.chatGateway.joinChatRoom(userSocketId, userName, chatUser.roomId);
+      this.chatGateway.joinChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.save(chatUser);
   }
@@ -293,7 +294,7 @@ export class ChatService {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
       const userName = (await this.userRepository.findOne({ where: { id: chatUser.userId } })).userName;
-      this.chatGateway.exitChatRoom(userSocketId, userName, chatUser.roomId);
+      this.chatGateway.exitChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.remove(chatUser);
   }
