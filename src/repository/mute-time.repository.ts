@@ -8,13 +8,13 @@ export class MuteTimeRepository {
   private readonly muteTimeMap: Map<compositeKey, muteTime> = new Map<compositeKey, muteTime>();
 
   makeCompositeKey(roomId: number, userId: number) {
-    return (roomId.toString()).concat(",", userId.toString());
+    return roomId.toString().concat(',', userId.toString());
   }
 
   find(roomId: number, userId: number): muteTime | undefined {
     return this.muteTimeMap.get(this.makeCompositeKey(roomId, userId));
   }
-  
+
   save(roomId: number, userId: number, muteTime: muteTime): void {
     this.muteTimeMap.set(this.makeCompositeKey(roomId, userId), muteTime);
   }

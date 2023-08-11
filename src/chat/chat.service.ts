@@ -238,7 +238,7 @@ export class ChatService {
     const prevStatus = targetUser.status;
     this.isValidChatUserToChange(targetUser);
     if (prevStatus == ChatUserStatus.BAN) {
-      await this.chatUserRepository.delete(targetUser)
+      await this.chatUserRepository.remove(targetUser);
     } else {
       targetUser.status = revertStatus.status;
       targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
@@ -289,7 +289,6 @@ export class ChatService {
   async joinChatRoom(chatUser: ChatUser) {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOneBy({ id: chatUser.userId })).userName;
       this.chatGateway.joinChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.save(chatUser);
@@ -298,7 +297,6 @@ export class ChatService {
   async leaveChatRoom(chatUser: ChatUser) {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOne({ where: { id: chatUser.userId } })).userName;
       this.chatGateway.exitChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.remove(chatUser);
