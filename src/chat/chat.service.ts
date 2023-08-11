@@ -235,10 +235,15 @@ export class ChatService {
 
   async revertChatStatus(revertStatus: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(revertStatus.roomId, revertStatus.userId);
+    const prevStatus = targetUser.status;
     this.isValidChatUserToChange(targetUser);
-    targetUser.status = revertStatus.status;
-    targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
-    await this.chatUserRepository.save(targetUser);
+    if (prevStatus == ChatUserStatus.BAN) {
+      await this.chatUserRepository.delete(targetUser)
+    } else {
+      targetUser.status = revertStatus.status;
+      targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
+      await this.chatUserRepository.save(targetUser);
+    }
   }
 
   updateMuteTime(targetUser: ChatUser, newChatStatus: UpdateChatStatusDto): Date {
