@@ -245,10 +245,10 @@ export class ChatService {
     if (newChatStatus.status == ChatUserStatus.MUTE) {
       if (!newChatStatus.muteTime || typeof newChatStatus.muteTime === 'undefined')
         throw new BadRequestException('Need limited mute time');
-      this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+      this.muteTimeRepository.save(targetUser.roomId, targetUser.userId, targetUser.muteTime);
       return newChatStatus.muteTime;
     } else {
-      this.muteTimeRepository.delete(targetUser.userId);
+      this.muteTimeRepository.delete(targetUser.roomId, targetUser.userId);
       return this.defaultMuteTime;
     }
   }
