@@ -6,8 +6,9 @@ import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
+import { ChatUser } from 'src/common/entities/chatuser.entity';
 
-@WebSocketGateway()
+@WebSocketGateway({ cors: true })
 export class ChatGateway {
   constructor(
     private readonly userSocketRepository: UserSocketRepository,
@@ -38,16 +39,16 @@ export class ChatGateway {
     return;
   }
 
-  joinChatRoom(userSocket: string, userName: string, roomId: number) {
-    const roomName: string = roomId.toString();
+  joinChatRoom(userSocket: string, chatUser: ChatUser) {
+    const roomName: string = chatUser.roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
-    this.server.to(roomName).emit('join', userName);
+    this.server.to(roomName).emit('join', { roomId: chatUser.roomId, userId: chatUser.userId });
     return;
   }
 
-  exitChatRoom(userSocket: string, userName: string, roomId: number) {
-    const roomName: string = roomId.toString();
-    this.server.to(roomName).emit('leave', userName);
+  exitChatRoom(userSocket: string, chatUser: ChatUser) {
+    const roomName: string = chatUser.roomId.toString();
+    this.server.to(roomName).emit('leave', { roomId: chatUser.roomId, userId: chatUser.userId });
     this.server.in(userSocket).socketsLeave(roomName);
     return;
   }

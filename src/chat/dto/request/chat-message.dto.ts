@@ -12,5 +12,8 @@ export class ChatMessageDto {
   @IsNotEmpty()
   userName: string;
 
+  @IsNotEmpty()
+  avatarURL: string;
+
   message: string;
 }
