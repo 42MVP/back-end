@@ -227,6 +227,7 @@ export class ChatService {
   async muteChatUser(muteChatUser: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(muteChatUser.roomId, muteChatUser.userId);
     this.isValidChatUserToChange(targetUser);
+
     targetUser.status = muteChatUser.status;
     targetUser.muteTime = this.updateMuteTime(targetUser, muteChatUser);
     await this.chatUserRepository.save(targetUser);
@@ -234,20 +235,25 @@ export class ChatService {
 
   async revertChatStatus(revertStatus: UpdateChatStatusDto) {
     const targetUser = await this.findExistChatUser(revertStatus.roomId, revertStatus.userId);
+    const prevStatus = targetUser.status;
     this.isValidChatUserToChange(targetUser);
-    targetUser.status = revertStatus.status;
-    targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
-    await this.chatUserRepository.save(targetUser);
+    if (prevStatus == ChatUserStatus.BAN) {
+      await this.chatUserRepository.remove(targetUser);
+    } else {
+      targetUser.status = revertStatus.status;
+      targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
+      await this.chatUserRepository.save(targetUser);
+    }
   }
 
   updateMuteTime(targetUser: ChatUser, newChatStatus: UpdateChatStatusDto): Date {
     if (newChatStatus.status == ChatUserStatus.MUTE) {
       if (!newChatStatus.muteTime || typeof newChatStatus.muteTime === 'undefined')
         throw new BadRequestException('Need limited mute time');
-      this.muteTimeRepository.save(targetUser.userId, targetUser.muteTime);
+      this.muteTimeRepository.save(targetUser.roomId, targetUser.userId, targetUser.muteTime);
       return newChatStatus.muteTime;
     } else {
-      this.muteTimeRepository.delete(targetUser.userId);
+      this.muteTimeRepository.delete(targetUser.roomId, targetUser.userId);
       return this.defaultMuteTime;
     }
   }
@@ -283,8 +289,7 @@ export class ChatService {
   async joinChatRoom(chatUser: ChatUser) {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOneBy({ id: chatUser.userId })).userName;
-      this.chatGateway.joinChatRoom(userSocketId, userName, chatUser.roomId);
+      this.chatGateway.joinChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.save(chatUser);
   }
@@ -292,8 +297,7 @@ export class ChatService {
   async leaveChatRoom(chatUser: ChatUser) {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
     if (typeof userSocketId === 'string') {
-      const userName = (await this.userRepository.findOne({ where: { id: chatUser.userId } })).userName;
-      this.chatGateway.exitChatRoom(userSocketId, userName, chatUser.roomId);
+      this.chatGateway.exitChatRoom(userSocketId, chatUser);
     }
     await this.chatUserRepository.remove(chatUser);
   }

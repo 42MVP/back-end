@@ -6,8 +6,9 @@ import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
+import { ChatUser } from 'src/common/entities/chatuser.entity';
 
-@WebSocketGateway()
+@WebSocketGateway({ cors: true })
 export class ChatGateway {
   constructor(
     private readonly userSocketRepository: UserSocketRepository,
@@ -16,8 +17,8 @@ export class ChatGateway {
   @WebSocketServer()
   server: Server;
 
-  isUserMuted(userId: number): boolean {
-    const userMuteTime: Date | undefined = this.muteTimeRepository.find(userId);
+  isUserMuted(roomId: number, userId: number): boolean {
+    const userMuteTime: Date | undefined = this.muteTimeRepository.find(roomId, userId);
     if (typeof userMuteTime === undefined) {
       return false;
     }
@@ -25,29 +26,29 @@ export class ChatGateway {
     if (userMuteTime >= timeOfNow) {
       return true;
     } else {
-      this.muteTimeRepository.delete(userId);
+      this.muteTimeRepository.delete(roomId, userId);
       return false;
     }
   }
 
   @SubscribeMessage('send-message')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
-    if (this.isUserMuted(message.userId) === true) return;
+    if (this.isUserMuted(message.roomId, message.userId) === true) return;
     const roomName: string = message.roomId.toString();
     this.server.to(roomName).emit('receive-message', message);
     return;
   }
 
-  joinChatRoom(userSocket: string, userName: string, roomId: number) {
-    const roomName: string = roomId.toString();
+  joinChatRoom(userSocket: string, chatUser: ChatUser) {
+    const roomName: string = chatUser.roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
-    this.server.to(roomName).emit('join', userName);
+    this.server.to(roomName).emit('join', { roomId: chatUser.roomId, userId: chatUser.userId });
     return;
   }
 
-  exitChatRoom(userSocket: string, userName: string, roomId: number) {
-    const roomName: string = roomId.toString();
-    this.server.to(roomName).emit('leave', userName);
+  exitChatRoom(userSocket: string, chatUser: ChatUser) {
+    const roomName: string = chatUser.roomId.toString();
+    this.server.to(roomName).emit('leave', { roomId: chatUser.roomId, userId: chatUser.userId });
     this.server.in(userSocket).socketsLeave(roomName);
     return;
   }

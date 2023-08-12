@@ -1,30 +1,35 @@
 import { Injectable } from '@nestjs/common';
 
-type userId = number;
+type compositeKey = string;
 type muteTime = Date;
 
 @Injectable()
 export class MuteTimeRepository {
-  private readonly muteTimeMap: Map<userId, muteTime> = new Map<userId, muteTime>();
+  private readonly muteTimeMap: Map<compositeKey, muteTime> = new Map<compositeKey, muteTime>();
 
-  find(userId: userId): muteTime | undefined {
-    return this.muteTimeMap.get(userId);
+  makeCompositeKey(roomId: number, userId: number) {
+    return roomId.toString().concat(',', userId.toString());
   }
 
-  save(userId: userId, muteTime: muteTime): void {
-    this.muteTimeMap.set(userId, muteTime);
+  find(roomId: number, userId: number): muteTime | undefined {
+    return this.muteTimeMap.get(this.makeCompositeKey(roomId, userId));
   }
 
-  update(userId: userId, muteTime: muteTime): boolean {
-    if (this.muteTimeMap.get(userId) === undefined) {
+  save(roomId: number, userId: number, muteTime: muteTime): void {
+    this.muteTimeMap.set(this.makeCompositeKey(roomId, userId), muteTime);
+  }
+
+  update(roomId: number, userId: number, muteTime: muteTime): boolean {
+    const targetKey: compositeKey = this.makeCompositeKey(roomId, userId);
+    if (this.muteTimeMap.get(targetKey) === undefined) {
       return false;
     } else {
-      this.muteTimeMap.set(userId, muteTime);
+      this.muteTimeMap.set(targetKey, muteTime);
       return true;
     }
   }
 
-  delete(userId: userId): boolean {
-    return this.muteTimeMap.delete(userId);
+  delete(roomId: number, userId: number): boolean {
+    return this.muteTimeMap.delete(this.makeCompositeKey(roomId, userId));
   }
 }
