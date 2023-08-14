@@ -11,6 +11,6 @@ export class AuthController {
   @Post('reissue')
   @UseGuards(JwtRefreshGuard)
   async reissue(@Res() res: Response, @ExtractId() id: number): Promise<void> {
-    res.cookie('access-token', this.authService.getJwtAccessToken(id)).send();
+    res.cookie('access-token', await this.authService.getJwtAccessToken(id)).send();
   }
 }
