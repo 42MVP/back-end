@@ -20,6 +20,10 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
   async findOneByIntraId(intraId: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: {
@@ -44,6 +48,21 @@ export class UserService {
     user.gameHistories = await this.gameHistoryService.getGameHistry(id);
     // ToDo: achievement refactoring
     user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(id));
+    return user;
+  }
+
+  async findOneByUsername(username: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        userName: username,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('해당 유저가 존재하지 않습니다!');
+    }
+    user.gameHistories = await this.gameHistoryService.getGameHistry(user.id);
+    // ToDo: achievement refactoring
+    user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(user.id));
     return user;
   }
 
