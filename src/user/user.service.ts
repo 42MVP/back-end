@@ -51,6 +51,21 @@ export class UserService {
     return user;
   }
 
+  async findOneByUsername(username: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: {
+        userName: username,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('해당 유저가 존재하지 않습니다!');
+    }
+    user.gameHistories = await this.gameHistoryService.getGameHistry(user.id);
+    // ToDo: achievement refactoring
+    user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(user.id));
+    return user;
+  }
+
   async updateRefreshToken(id: number, refreshToken: string): Promise<void> {
     const result: UpdateResult = await this.userRepository.update(
       {
