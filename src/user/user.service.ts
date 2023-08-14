@@ -20,6 +20,10 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
+  async findAll(): Promise<User[]> {
+    return await this.userRepository.find();
+  }
+
   async findOneByIntraId(intraId: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: {

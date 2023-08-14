@@ -14,6 +14,11 @@ export class UserController {
     return await this.userService.findOneById(id);
   }
 
+  @Get()
+  async finAll() {
+    return await this.userService.findAll();
+  }
+
   @Put(':id')
   async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
     return await this.userService.update(id, updateUserDto);
