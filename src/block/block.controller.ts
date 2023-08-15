@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseFilters, Delete, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseFilters, Delete, UseGuards } from '@nestjs/common';
 import { BlockService } from './block.service';
 import { User } from '../common/entities/user.entity';
 import { QueryFailedErrorFilter } from '../common/filters/query-failed.filter';

@@ -51,6 +51,14 @@ export class UserService {
     return user;
   }
 
+  async findAllByUsername(username: string): Promise<User[]> {
+    const userList: User[] = await this.userRepository
+      .createQueryBuilder('user')
+      .where('user_name like :name', { name: `${username}%` })
+      .getMany();
+    return userList;
+  }
+
   async findOneByUsername(username: string): Promise<User> {
     const user = await this.userRepository.findOne({
       where: {
