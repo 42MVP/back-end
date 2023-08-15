@@ -4,15 +4,19 @@ import { User } from '../common/entities/user.entity';
 import { FollowDto } from './dto/follow.dto';
 import { QueryFailedErrorFilter } from '../common/filters/query-failed.filter';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
+import { ExtractId } from 'src/common/decorators/extract-id.decorator';
+import { UserResponseBaseDto } from 'src/user/dto/user-response-base.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('friend')
 export class FriendController {
   constructor(private readonly friendService: FriendService) {}
 
-  @Get(':id')
-  async getFriendsList(@Param('id') id: number): Promise<User[]> {
-    return await this.friendService.getFriendsList(id);
+  @Get()
+  async getFriendsList(@ExtractId() id: number): Promise<UserResponseBaseDto[]> {
+    const userList: User[] = await this.friendService.getFriendsList(id);
+    const userResponseList: UserResponseBaseDto[] = userList.map(user => new UserResponseBaseDto(user));
+    return userResponseList;
   }
 
   @Post()
