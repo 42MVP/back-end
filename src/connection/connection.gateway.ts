@@ -26,23 +26,33 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
   async handleConnection(@ConnectedSocket() client: Socket) {
     this.logger.log(`${client.id} client is connected`);
     // 개발용
-    //const id: number = await this.authService.jwtVerify(client.handshake.headers.authorization);
+    try {
+      const id: number = await this.authService.jwtVerify(client.handshake.headers.authorization);
+      this.userSocketRepository.save(id, client.id);
+      const userRooms: number[] = await this.connectionService.getUserRoomId(id);
+      console.log('connect room:', userRooms);
+      userRooms.forEach(e => {
+        this.server.in(client.id).socketsJoin(e.toString());
+      });
+    } catch (e) {
+      console.error('JWT 인증 실패');
+      client.disconnect();
+    }
     // 배포용
-    const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
-    this.userSocketRepository.save(id, client.id);
-    const userRooms: number[] = await this.connectionService.getUserRoomId(id);
-    console.log('connect room:', userRooms);
-    userRooms.forEach(e => {
-      this.server.in(client.id).socketsJoin(e.toString());
-    });
+    //const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
   }
 
   async handleDisconnect(@ConnectedSocket() client: Socket) {
     this.logger.log(`${client.id} client is disconnected`);
     // 개발용
-    const id: number = await this.authService.jwtVerify(client.handshake.headers.authorization);
+    try {
+      const id: number = await this.authService.jwtVerify(client.handshake.headers.authorization);
+      this.userSocketRepository.delete(id);
+    } catch (e) {
+      console.error('JWT 인증 실패');
+    }
+    client.disconnect();
     // 배포용
     // const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
-    this.userSocketRepository.delete(id);
   }
 }
