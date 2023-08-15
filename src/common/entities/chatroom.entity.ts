@@ -27,6 +27,7 @@ export class ChatRoom extends BaseEntity {
   @BeforeInsert()
   private insertPassword() {
     const salt = bcrypt.genSaltSync();
-    this.password = bcrypt.hashSync(this.password, salt);
+    if (this.password)
+      this.password = bcrypt.hashSync(this.password, salt);
   }
 }
