@@ -1,4 +1,5 @@
-export class FriendBlockListResponseDto {
+export class UserResponseBaseDto {
+  id: number;
   name: string;
   avatarURL: string;
   achievements: number[];
