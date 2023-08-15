@@ -16,32 +16,6 @@ export class FriendService {
   ) {}
 
   async getFriendsList(id: number): Promise<User[]> {
-    // const friendships = await this.friendshipRepository.find({
-    //   where: {
-    //     fromId: id,
-    //   },
-    // });
-    // return await this.userRepository.find({
-    //   where: {
-    //     id: In(friendships.map(friendship => friendship.toId)),
-    //   },
-    // });
-
-    // return await this.userRepository
-    //   .createQueryBuilder('user')
-    //   .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')
-    //   .where(subQuery => {
-    //     const subQueryBuilder = subQuery
-    //       .subQuery()
-    //       .select('friendship.to_id')
-    //       .from(Friendship, 'friendship')
-    //       .where('friendship.from_id = :id', { id: 1 })
-    //       .getQuery();
-
-    //     return 'friendship.to_id IN ' + subQueryBuilder;
-    //   })
-    //   .getMany();
-
     return await this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')

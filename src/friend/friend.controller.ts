@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Delete, UseFilters, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Delete, UseFilters, UseGuards } from '@nestjs/common';
 import { FriendService } from './friend.service';
 import { User } from '../common/entities/user.entity';
 import { FollowDto } from './dto/follow.dto';
