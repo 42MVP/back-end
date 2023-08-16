@@ -50,6 +50,11 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('send-message')
+  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
+    if (this.isUserMuted(message.roomId, message.userId) === true) return;
+    this.emitToRoom(message.roomId, 'receive-message', message);
+  }
+
   joinToRoom(userId: number, roomId: number): void {
     const userSocket = this.userSocketRepository.find(userId);
     if (userSocket === undefined) return;
@@ -69,11 +74,6 @@ export class ChatGateway {
   private emitToRoom(roomId: number, eventName: string, data: any): void {
     const roomName: string = roomId.toString();
     this.server.to(roomName).emit(eventName, data);
-  }
-
-  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
-    if (this.isUserMuted(message.roomId, message.userId) === true) return;
-    this.emitToRoom(message.roomId, 'receive-message', message);
   }
 
   sendAddedRoom(userId: number, data: ChatRoomDataDto) {
