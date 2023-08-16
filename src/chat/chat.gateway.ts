@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { ChatMessageDto } from './dto/request/chat-message.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
+import { ChatRoom } from 'src/common/entities/chatroom.entity';
 
 interface SocketUserInfo {
   roomId: number;
@@ -75,6 +76,13 @@ export class ChatGateway {
     this.emitToRoom(message.roomId, 'receive-message', message);
   }
 
+  sendAddedRoom(userId: number, data: ChatRoom) {
+    const userSocket = this.userSocketRepository.find(userId);
+    if (userSocket === undefined) return;
+
+    this.server.to(userSocket).emit('addedRoom', data);
+  }
+
   // SocketUserInfo
 
   sendJoin(data: SocketUserInfo) {
@@ -84,6 +92,7 @@ export class ChatGateway {
   sendBan(data: SocketUserInfo) {
     this.emitToRoom(data.roomId, 'ban', data);
   }
+
   // ===========================
 
   // SocketUserAction

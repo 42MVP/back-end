@@ -310,13 +310,15 @@ export class ChatService {
     await this.chatUserRepository.save(chatUser);
     const user = await this.userRepository.findOne({ where: { id: chatUser.userId } });
 
-    this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
     this.chatGateway.sendJoin({
       roomId: chatUser.roomId,
       userId: chatUser.userId,
       name: user.userName,
       avatarURL: 'will be added',
     });
+    this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
+    const room = await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } });
+    this.chatGateway.sendAddedRoom(chatUser.userId, room);
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
