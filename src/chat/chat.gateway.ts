@@ -3,7 +3,6 @@ import { Server, Socket } from 'socket.io';
 import { ChatMessageDto } from './dto/request/chat-message.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
-import { ChatRoom } from 'src/common/entities/chatroom.entity';
 import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 
 interface SocketUserInfo {
@@ -91,8 +90,6 @@ export class ChatGateway {
     this.server.to(userSocket).emit('kick', data);
   }
 
-  // SocketUserInfo
-
   sendJoin(data: SocketUserInfo) {
     this.emitToRoom(data.roomId, 'join', data);
   }
@@ -101,9 +98,6 @@ export class ChatGateway {
     this.emitToRoom(data.roomId, 'ban', data);
   }
 
-  // ===========================
-
-  // SocketUserAction
   sendLeave(data: SocketUserAction) {
     this.emitToRoom(data.roomId, 'leave', data);
   }
@@ -111,17 +105,12 @@ export class ChatGateway {
   sendUnban(data: SocketUserAction) {
     this.emitToRoom(data.roomId, 'unban', data);
   }
-  // ===========================
 
-  // SocketMute
   sendMute(data: SocketMute) {
     this.emitToRoom(data.roomId, 'mute', data);
   }
-  // ===========================
 
-  // SocketUserMode
   sendUserMode(data: SocketUserMode) {
     this.emitToRoom(data.roomId, 'userMode', data);
   }
-  // ===========================
 }
