@@ -84,6 +84,13 @@ export class ChatGateway {
     this.server.to(userSocket).emit('addedRoom', data);
   }
 
+  sendKick(userId: number, data: SocketUserAction) {
+    const userSocket = this.userSocketRepository.find(userId);
+    if (userSocket === undefined) return;
+
+    this.server.to(userSocket).emit('kick', data);
+  }
+
   // SocketUserInfo
 
   sendJoin(data: SocketUserInfo) {
@@ -97,10 +104,6 @@ export class ChatGateway {
   // ===========================
 
   // SocketUserAction
-  sendKick(data: SocketUserAction) {
-    this.emitToRoom(data.roomId, 'kick', data);
-  }
-
   sendLeave(data: SocketUserAction) {
     this.emitToRoom(data.roomId, 'leave', data);
   }

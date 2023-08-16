@@ -241,11 +241,12 @@ export class ChatService {
     this.isValidChatUserToChange(targetUser);
     if (prevStatus == ChatUserStatus.BAN) {
       await this.chatUserRepository.remove(targetUser);
-    } else {
-      targetUser.status = revertStatus.status;
-      targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
-      await this.chatUserRepository.save(targetUser);
+      return ChatUserStatus.BAN;
     }
+    targetUser.status = revertStatus.status;
+    targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
+    await this.chatUserRepository.save(targetUser);
+    return ChatUserStatus.MUTE;
   }
 
   updateMuteTime(targetUser: ChatUser, newChatStatus: UpdateChatStatusDto): Date {
@@ -264,49 +265,50 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     await this.isValidChatRoomToChage(newChatStatus.roomId);
+
+    const targetRoomId = execUser.roomId;
+    const targetUserId = newChatStatus.userId;
+
     switch (newChatStatus.status) {
       case ChatUserStatus.KICK:
         await this.kickChatUser(newChatStatus);
+        this.chatGateway.sendKick(targetUserId, { roomId: targetRoomId, userId: targetUserId });
+        this.chatGateway.leaveFromRoom(targetUserId, targetRoomId);
+        this.chatGateway.sendLeave({ roomId: targetRoomId, userId: targetUserId });
         break;
       case ChatUserStatus.BAN:
         await this.banChatUser(newChatStatus);
-        break;
-      case ChatUserStatus.MUTE:
-        await this.muteChatUser(newChatStatus);
-        break;
-      case ChatUserStatus.NONE:
-        await this.revertChatStatus(newChatStatus);
-        break;
-    }
-
-    switch (newChatStatus.status) {
-      case ChatUserStatus.BAN:
-        const user = await this.userRepository.findOne({ where: { id: execUser.userId } });
+        const user = await this.userRepository.findOne({ where: { id: targetUserId } });
         if (!user) break;
-        this.chatGateway.leaveFromRoom(execUser.userId, execUser.roomId);
+        this.chatGateway.leaveFromRoom(targetUserId, targetRoomId);
         this.chatGateway.sendBan({
-          roomId: execUser.roomId,
-          userId: execUser.userId,
+          roomId: targetRoomId,
+          userId: targetUserId,
           name: user.userName,
           avatarURL: 'will be added',
         });
         break;
-      case ChatUserStatus.KICK:
-        this.chatGateway.leaveFromRoom(execUser.userId, execUser.roomId);
-        this.chatGateway.sendKick({ roomId: execUser.roomId, userId: execUser.userId });
-        break;
       case ChatUserStatus.MUTE:
+        await this.muteChatUser(newChatStatus);
         this.chatGateway.sendMute({
-          roomId: execUser.roomId,
-          userId: execUser.userId,
+          roomId: targetRoomId,
+          userId: targetUserId,
           abongTime: newChatStatus.muteTime,
         });
         break;
       case ChatUserStatus.NONE:
-        this.chatGateway.sendUnban({ roomId: execUser.roomId, userId: execUser.userId });
+        const ret: ChatUserStatus = await this.revertChatStatus(newChatStatus);
+        if (ret === ChatUserStatus.BAN) {
+          this.chatGateway.sendUnban({ roomId: targetRoomId, userId: targetUserId });
+        } else {
+          this.chatGateway.sendMute({
+            roomId: targetRoomId,
+            userId: targetUserId,
+            abongTime: this.defaultMuteTime,
+          });
+        }
         break;
     }
-    return;
   }
 
   async joinChatRoom(chatUser: ChatUser) {
