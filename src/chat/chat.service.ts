@@ -149,7 +149,10 @@ export class ChatService {
       ChatRole.USER,
       this.defaultMuteTime,
     );
+
     await this.joinChatRoom(newChatUser);
+    const room = await this.chatRoomRepository.findOne({ where: { id: newChatUser.roomId } });
+    this.chatGateway.sendAddedRoom(newChatUser.userId, await this.getChatRoomDto(newChatUser));
   }
 
   async findFreshChannels(userId: number) {
@@ -317,8 +320,6 @@ export class ChatService {
       avatarURL: 'will be added',
     });
     this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
-    const room = await this.chatRoomRepository.findOne({ where: { id: chatUser.roomId } });
-    this.chatGateway.sendAddedRoom(chatUser.userId, room);
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
