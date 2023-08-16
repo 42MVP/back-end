@@ -1,12 +1,29 @@
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatMessageDto } from './dto/request/chat-message.dto';
-import { ChatUserStatus } from '../common/enums';
-import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
-import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
-import { ChatUser } from 'src/common/entities/chatuser.entity';
+
+interface SocketUserInfo {
+  roomId: number;
+  userId: number;
+  name: string;
+  avatarURL: string;
+}
+interface SocketUserAction {
+  roomId: number;
+  userId: number;
+}
+interface SocketMute {
+  roomId: number;
+  userId: number;
+  abongTime: Date;
+}
+interface SocketUserMode {
+  roomId: number;
+  userId: number;
+  role: string;
+}
 
 @WebSocketGateway({ cors: true })
 export class ChatGateway {
@@ -32,50 +49,60 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('send-message')
+  joinToRoom(userSocket: string, roomId: number): void {
+    const roomName: string = roomId.toString();
+    this.server.in(userSocket).socketsJoin(roomName);
+  }
+
+  leaveFromRoom(userSocket: string, roomId: number) {
+    const roomName: string = roomId.toString();
+    this.server.to(userSocket).socketsLeave(roomName);
+  }
+
+  private emitToRoom(roomId: number, eventName: string, data: any): void {
+    const roomName: string = roomId.toString();
+    this.server.to(roomName).emit(eventName, data);
+  }
+
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() message: ChatMessageDto): void {
     if (this.isUserMuted(message.roomId, message.userId) === true) return;
-    const roomName: string = message.roomId.toString();
-    this.server.to(roomName).emit('receive-message', message);
-    return;
+    this.emitToRoom(message.roomId, 'receive-message', message);
   }
 
-  joinChatRoom(userSocket: string, chatUser: ChatUser) {
-    const roomName: string = chatUser.roomId.toString();
-    this.server.in(userSocket).socketsJoin(roomName);
-    this.server.to(roomName).emit('join', { roomId: chatUser.roomId, userId: chatUser.userId });
-    return;
+  // SocketUserInfo
+
+  sendJoin(data: SocketUserInfo) {
+    this.emitToRoom(data.roomId, 'join', data);
   }
 
-  exitChatRoom(userSocket: string, chatUser: ChatUser) {
-    const roomName: string = chatUser.roomId.toString();
-    this.server.to(roomName).emit('leave', { roomId: chatUser.roomId, userId: chatUser.userId });
-    this.server.in(userSocket).socketsLeave(roomName);
-    return;
+  sendBan(data: SocketUserInfo) {
+    this.emitToRoom(data.roomId, 'ban', data);
+  }
+  // ===========================
+
+  // SocketUserAction
+  sendKick(data: SocketUserAction) {
+    this.emitToRoom(data.roomId, 'kick', data);
   }
 
-  sendChangedUserRole(newRole: ChangedUserRoleDto, roomId: number): void {
-    const roomName: string = roomId.toString();
-    this.server.to(roomName).emit('userMode', newRole);
-    return;
+  sendLeave(data: SocketUserAction) {
+    this.emitToRoom(data.roomId, 'leave', data);
   }
 
-  sendChangedUserStatus(userSocket: string, newStatus: ChangedUserStatusDto, roomId: number): void {
-    const roomName: string = roomId.toString();
-    switch (newStatus.status) {
-      case ChatUserStatus.BAN:
-        this.server.to(roomName).emit('ban', newStatus);
-        this.server.to(userSocket).socketsLeave(roomName);
-        break;
-      case ChatUserStatus.KICK:
-        this.server.to(roomName).emit('kick', newStatus);
-        this.server.to(userSocket).socketsLeave(roomName);
-        break;
-      case ChatUserStatus.MUTE:
-        this.server.to(roomName).emit('mute', newStatus);
-        break;
-      default:
-        break;
-    }
-    return;
+  sendUnban(data: SocketUserAction) {
+    this.emitToRoom(data.roomId, 'unban', data);
   }
+  // ===========================
+
+  // SocketMute
+  sendMute(data: SocketMute) {
+    this.emitToRoom(data.roomId, 'mute', data);
+  }
+  // ===========================
+
+  // SocketUserMode
+  sendUserMode(data: SocketUserMode) {
+    this.emitToRoom(data.roomId, 'userMode', data);
+  }
+  // ===========================
 }

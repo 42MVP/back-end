@@ -150,7 +150,6 @@ export class ChatService {
       this.defaultMuteTime,
     );
     await this.joinChatRoom(newChatUser);
-    return this.getChatRoomDto(newChatUser);
   }
 
   async findFreshChannels(userId: number) {
@@ -202,7 +201,7 @@ export class ChatService {
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
     changedRole.changedRole = targetUser.role;
-    this.chatGateway.sendChangedUserRole(changedRole, targetUser.roomId);
+    this.chatGateway.sendUserMode({ roomId: targetUser.roomId, userId: targetUser.userId, role: targetUser.role });
     return;
   }
 
@@ -276,29 +275,59 @@ export class ChatService {
         await this.revertChatStatus(newChatStatus);
         break;
     }
-    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto(
-      (await this.userRepository.findOne({ where: { id: newChatStatus.userId } })).userName,
-      newChatStatus.status,
-    );
+
     const userSocket = this.userSocketRepository.find(newChatStatus.userId);
-    if (typeof userSocket === 'string')
-      this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
+    switch (newChatStatus.status) {
+      case ChatUserStatus.BAN:
+        const user = await this.userRepository.findOne({ where: { id: execUser.userId } });
+        if (!user) break;
+        if (typeof userSocket === 'string') this.chatGateway.leaveFromRoom(userSocket, execUser.userId);
+        this.chatGateway.sendBan({
+          roomId: execUser.roomId,
+          userId: execUser.userId,
+          name: user.userName,
+          avatarURL: 'will be added',
+        });
+        break;
+      case ChatUserStatus.KICK:
+        if (typeof userSocket === 'string') this.chatGateway.leaveFromRoom(userSocket, execUser.userId);
+        this.chatGateway.sendKick({ roomId: execUser.roomId, userId: execUser.userId });
+        break;
+      case ChatUserStatus.MUTE:
+        this.chatGateway.sendMute({
+          roomId: execUser.roomId,
+          userId: execUser.userId,
+          abongTime: newChatStatus.muteTime,
+        });
+        break;
+      case ChatUserStatus.NONE:
+        this.chatGateway.sendUnban({ roomId: execUser.roomId, userId: execUser.userId });
+        break;
+    }
     return;
   }
 
   async joinChatRoom(chatUser: ChatUser) {
-    const userSocketId = this.userSocketRepository.find(chatUser.userId);
-    if (typeof userSocketId === 'string') {
-      this.chatGateway.joinChatRoom(userSocketId, chatUser);
-    }
     await this.chatUserRepository.save(chatUser);
+    const user = await this.userRepository.findOne({ where: { id: chatUser.userId } });
+    const userSocketId = this.userSocketRepository.find(33333);
+
+    this.chatGateway.joinToRoom(userSocketId, chatUser.roomId);
+    this.chatGateway.sendJoin({
+      roomId: chatUser.roomId,
+      userId: chatUser.userId,
+      name: user.userName,
+      avatarURL: 'will be added',
+    });
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
     const userSocketId = this.userSocketRepository.find(chatUser.userId);
-    if (typeof userSocketId === 'string') {
-      this.chatGateway.exitChatRoom(userSocketId, chatUser);
-    }
+    if (typeof userSocketId === 'string') this.chatGateway.leaveFromRoom(userSocketId, chatUser.userId);
+    this.chatGateway.sendLeave({
+      roomId: chatUser.roomId,
+      userId: chatUser.userId,
+    });
     await this.chatUserRepository.remove(chatUser);
   }
 
