@@ -151,7 +151,6 @@ export class ChatService {
     );
 
     await this.joinChatRoom(newChatUser);
-    const room = await this.chatRoomRepository.findOne({ where: { id: newChatUser.roomId } });
     this.chatGateway.sendAddedRoom(newChatUser.userId, await this.getChatRoomDto(newChatUser));
   }
 
@@ -279,12 +278,11 @@ export class ChatService {
       case ChatUserStatus.BAN:
         await this.banChatUser(newChatStatus);
         const user = await this.userRepository.findOne({ where: { id: targetUserId } });
-        if (!user) break;
         this.chatGateway.leaveFromRoom(targetUserId, targetRoomId);
         this.chatGateway.sendBan({
           roomId: targetRoomId,
           userId: targetUserId,
-          name: user.userName,
+          name: user?.userName,
           avatarURL: 'will be added',
         });
         break;
@@ -318,7 +316,7 @@ export class ChatService {
     this.chatGateway.sendJoin({
       roomId: chatUser.roomId,
       userId: chatUser.userId,
-      name: user.userName,
+      name: user?.userName,
       avatarURL: 'will be added',
     });
     this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
