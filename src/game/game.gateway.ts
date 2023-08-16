@@ -150,6 +150,6 @@ export class GameGateway {
     const userPaddle = this.findUserPaddle(client, game);
     if (userPaddle == null) return; // invalid;
     // 패들 위치만 변경;
-    if (userPaddle.y > 0) userPaddle.y -= this.setting.paddleSpeed;
+    if (userPaddle.y < this.setting.gameHeight - userPaddle.height) userPaddle.y += this.setting.paddleSpeed;
   }
 }
