@@ -49,12 +49,18 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('send-message')
-  joinToRoom(userSocket: string, roomId: number): void {
+  joinToRoom(userId: number, roomId: number): void {
+    const userSocket = this.userSocketRepository.find(userId);
+    if (userSocket === undefined) return;
+
     const roomName: string = roomId.toString();
     this.server.in(userSocket).socketsJoin(roomName);
   }
 
-  leaveFromRoom(userSocket: string, roomId: number) {
+  leaveFromRoom(userId: number, roomId: number) {
+    const userSocket = this.userSocketRepository.find(userId);
+    if (userSocket === undefined) return;
+
     const roomName: string = roomId.toString();
     this.server.to(userSocket).socketsLeave(roomName);
   }

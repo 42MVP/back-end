@@ -276,12 +276,11 @@ export class ChatService {
         break;
     }
 
-    const userSocket = this.userSocketRepository.find(newChatStatus.userId);
     switch (newChatStatus.status) {
       case ChatUserStatus.BAN:
         const user = await this.userRepository.findOne({ where: { id: execUser.userId } });
         if (!user) break;
-        if (typeof userSocket === 'string') this.chatGateway.leaveFromRoom(userSocket, execUser.userId);
+        this.chatGateway.leaveFromRoom(execUser.userId, execUser.roomId);
         this.chatGateway.sendBan({
           roomId: execUser.roomId,
           userId: execUser.userId,
@@ -290,7 +289,7 @@ export class ChatService {
         });
         break;
       case ChatUserStatus.KICK:
-        if (typeof userSocket === 'string') this.chatGateway.leaveFromRoom(userSocket, execUser.userId);
+        this.chatGateway.leaveFromRoom(execUser.userId, execUser.roomId);
         this.chatGateway.sendKick({ roomId: execUser.roomId, userId: execUser.userId });
         break;
       case ChatUserStatus.MUTE:
@@ -310,9 +309,8 @@ export class ChatService {
   async joinChatRoom(chatUser: ChatUser) {
     await this.chatUserRepository.save(chatUser);
     const user = await this.userRepository.findOne({ where: { id: chatUser.userId } });
-    const userSocketId = this.userSocketRepository.find(33333);
 
-    this.chatGateway.joinToRoom(userSocketId, chatUser.roomId);
+    this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
     this.chatGateway.sendJoin({
       roomId: chatUser.roomId,
       userId: chatUser.userId,
@@ -322,8 +320,7 @@ export class ChatService {
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
-    const userSocketId = this.userSocketRepository.find(chatUser.userId);
-    if (typeof userSocketId === 'string') this.chatGateway.leaveFromRoom(userSocketId, chatUser.userId);
+    this.chatGateway.leaveFromRoom(chatUser.userId, chatUser.roomId);
     this.chatGateway.sendLeave({
       roomId: chatUser.roomId,
       userId: chatUser.userId,
