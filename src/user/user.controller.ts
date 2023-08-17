@@ -54,8 +54,8 @@ export class UserController {
     return await this.userService.findAll();
   }
 
-  @Put(':id')
-  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
+  @Put()
+  async update(@ExtractId() id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
     return await this.userService.update(id, updateUserDto);
   }
 }
