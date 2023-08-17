@@ -5,6 +5,8 @@ import { User } from '../common/entities/user.entity';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SearchResponseDto } from './dto/search-response.dto';
+import { MeUserResponseDto } from './dto/me-user-response.dto';
+import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -16,6 +18,12 @@ export class UserController {
     const userList: User[] = await this.userService.findAllByUsername(query.name);
     const searchResponseList: SearchResponseDto[] = userList.map(user => new SearchResponseDto(user));
     return searchResponseList;
+  }
+
+  @Get('me')
+  async getMyProfile(@ExtractId() id: number): Promise<MeUserResponseDto> {
+    const user: User = await this.userService.findOneById(id);
+    return new MeUserResponseDto(user);
   }
 
   @Get('id/:id')
