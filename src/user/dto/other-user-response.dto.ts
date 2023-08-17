@@ -7,6 +7,7 @@ export class OtherUserResponseDto extends UserResponseBaseDto {
     super(user);
     this.isFollow = isFriend;
     this.isBlock = isBlock;
+    this.gameHistory = user.gameHistories.map(x => new GameHistoryResponseDto(x, user.id));
   }
 
   isFollow: boolean;

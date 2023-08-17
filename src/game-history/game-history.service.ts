@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GameHistory } from '../common/entities/game-history.entity';
 import { Repository } from 'typeorm';
+import { User } from 'src/common/entities/user.entity';
 
 @Injectable()
 export class GameHistoryService {
@@ -20,4 +21,14 @@ export class GameHistoryService {
       where: [{ winnerId: id }, { loserId: id }],
     });
   }
+
+  // async getOpponentInfo(id: number): Promise<User[]> {
+  //   return await this.userRepository
+  //     .createQueryBuilder('user')
+  //     .leftJoinAndSelect(GameHistory, 'game_history', 'game_history.winner_id = :id OR game_history.loser_id = :id', {
+  //       id: id,
+  //     })
+  //     .where('friendship.from_id = :user_id', { user_id: id })
+  //     .getMany();
+  // }
 }

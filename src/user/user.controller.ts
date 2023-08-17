@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Put, Param, UseGuards, Query, Inject, forwardRef } from '@nestjs/common';
+import { Controller, Get, Body, Put, Param, UseGuards, Query } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../common/entities/user.entity';
