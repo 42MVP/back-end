@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../common/entities/user.entity';
 import { DeleteResult, Repository } from 'typeorm';
@@ -36,5 +36,18 @@ export class FriendService {
     if (result.affected == 0) {
       throw new NotFoundException('해당 유저를 팔로우하고 있지 않습니다!');
     }
+  }
+
+  async isFriend(id: number, target: number): Promise<boolean> {
+    let result = false;
+
+    (await this.getFriendsList(id)).forEach(user => {
+      if (user.id == target) {
+        result = true;
+        return;
+      }
+    });
+
+    return result;
   }
 }

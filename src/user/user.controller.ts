@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Put, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Body, Put, Param, UseGuards, Query, Inject, forwardRef } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../common/entities/user.entity';
@@ -7,11 +7,18 @@ import { SearchQueryDto } from './dto/search-query.dto';
 import { SearchResponseDto } from './dto/search-response.dto';
 import { MeUserResponseDto } from './dto/me-user-response.dto';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
+import { OtherUserResponseDto } from './dto/other-user-response.dto';
+import { FriendService } from 'src/friend/friend.service';
+import { BlockService } from 'src/block/block.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly friendshipService: FriendService,
+    private readonly blockService: BlockService,
+  ) {}
 
   @Get('search')
   async findByUsername(@Query() query: SearchQueryDto): Promise<SearchResponseDto[]> {
@@ -27,13 +34,19 @@ export class UserController {
   }
 
   @Get('id/:id')
-  async findOneById(@Param('id') id: number): Promise<User> {
-    return await this.userService.findOneById(id);
+  async findOneById(@ExtractId() myId: number, @Param('id') id: number): Promise<OtherUserResponseDto> {
+    const isFriend = await this.friendshipService.isFriend(myId, id);
+    const isBlock = await this.blockService.isBlock(myId, id);
+    const user: User = await this.userService.findOneById(id);
+    return new OtherUserResponseDto(user, isFriend, isBlock);
   }
 
   @Get('name/:name')
-  async findOneByName(@Param('name') name: string): Promise<User> {
-    return await this.userService.findOneByUsername(name);
+  async findOneByName(@ExtractId() myId: number, @Param('name') name: string): Promise<OtherUserResponseDto> {
+    const user: User = await this.userService.findOneByUsername(name);
+    const isFriend = await this.friendshipService.isFriend(myId, user.id);
+    const isBlock = await this.blockService.isBlock(myId, user.id);
+    return new OtherUserResponseDto(user, isFriend, isBlock);
   }
 
   @Get()
