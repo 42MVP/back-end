@@ -1,14 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GameHistory } from 'src/common/entities/game-history.entity';
-import { User } from 'src/common/entities/user.entity';
 import { Repository } from 'typeorm';
 
 @Injectable()
 export class GameService {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
     @InjectRepository(GameHistory)
     private gameHistoryRepository: Repository<GameHistory>,
   ) {}
@@ -17,8 +14,8 @@ export class GameService {
     const newRecord: GameHistory = new GameHistory(
       gameResult.winId,
       gameResult.defeatId,
-      gameResult.winValue,
-      gameResult.defeatValue,
+      gameResult.winScore,
+      gameResult.defeatScore,
     );
     await this.gameHistoryRepository.save(newRecord);
     return;
