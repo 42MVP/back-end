@@ -6,6 +6,7 @@ import { QueueRepository } from 'src/repository/queue.repository';
 import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { TempGateway } from 'src/temp/temp.gateway';
 
 @WebSocketGateway()
 export class GameMatchingGateway {
@@ -13,6 +14,7 @@ export class GameMatchingGateway {
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
     private readonly queueRepository: QueueRepository,
+    private readonly tempGateway: TempGateway,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -52,7 +54,6 @@ export class GameMatchingGateway {
   sendTimeout(matchingId: number, user1: number, user2: number) {
     const roomName = matchingId.toString();
     this.matchingRepository.delete(matchingId);
-    // 게임 생성 후 ID 알려주기
     this.server.to(roomName).emit('timeout');
     const user1Socket: string | undefined = this.userSocketRepository.find(user1);
     const user2Socket: string | undefined = this.userSocketRepository.find(user2);
@@ -78,13 +79,15 @@ export class GameMatchingGateway {
     }
     const roomName = acceptMatchingDto.matchingId.toString();
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
-    // 게임 생성 후 ID 알려주기
+
     this.server.to(roomName).emit('confirm', true);
 
     const user1Socket: string | undefined = this.userSocketRepository.find(matching.challengers[0]);
     const user2Socket: string | undefined = this.userSocketRepository.find(matching.challengers[1]);
     if (user1Socket !== undefined) this.server.to(user1Socket).socketsLeave(roomName);
     if (user2Socket !== undefined) this.server.to(user2Socket).socketsLeave(roomName);
+
+    this.tempGateway.joinTestGameRoom(matching.challengers[0], user1Socket, matching.challengers[1], user2Socket);
   }
 
   @SubscribeMessage('reject-matching')

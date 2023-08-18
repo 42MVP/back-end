@@ -7,10 +7,11 @@ import { QueueService } from './queue.service';
 import { RepositoryModule } from 'src/repository/repository.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
+import { TempGateway } from 'src/temp/temp.gateway';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User]), ScheduleModule.forRoot(), RepositoryModule],
   controllers: [GameMatchingController],
-  providers: [GameMatchingGateway, GameMatchingService, QueueService],
+  providers: [TempGateway, GameMatchingGateway, GameMatchingService, QueueService],
 })
 export class GameMatchingModule {}
