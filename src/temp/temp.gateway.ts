@@ -23,7 +23,12 @@ export class TempGateway {
   private gameRepository: Map<string, Game> = new Map<string, Game>();
 
   devGame: Game = {
-    gameInfo: { roomId: 42, leftUser: null, rightUser: null, backgroundColor: 'white' },
+    gameInfo: {
+      roomId: 42,
+      leftUser: { userId: 42, userName: 'testUser1', userSocket: null },
+      rightUser: { userId: 24, userName: 'testUser2', userSocket: 'not_real_socket_id' },
+      backgroundColor: 'white',
+    },
     scoreInfo: { leftScore: 0, rightScore: 0 },
     renderInfo: {
       leftPaddle: { width: 20, height: 100, x: 0, y: 300 },
@@ -32,13 +37,13 @@ export class TempGateway {
     },
   };
 
-  failData: MatchData = {
-    result: false,
-    leftUser: null,
-    rightUser: null,
-    gameRoomId: 0,
-    startAt: null,
-  };
+  // failData: MatchData = {
+  //   result: false,
+  //   leftUser: null,
+  //   rightUser: null,
+  //   gameRoomId: 0,
+  //   startAt: null,
+  // };
 
   successData: MatchData = {
     result: true,
@@ -50,15 +55,7 @@ export class TempGateway {
 
   @SubscribeMessage('testGameJoin') // dev-test only;
   joinTestGameRoom(@ConnectedSocket() client: Socket) {
-    if (this.devGame.gameInfo.leftUser === null) {
-      this.devGame.gameInfo.leftUser.userId = 42;
-      this.devGame.gameInfo.leftUser.userSocket = client.id;
-      this.devGame.gameInfo.leftUser.userName = 'testUser1';
-    } else if (this.devGame.gameInfo.rightUser === null) {
-      this.devGame.gameInfo.rightUser.userId = 24;
-      this.devGame.gameInfo.rightUser.userSocket = client.id;
-      this.devGame.gameInfo.rightUser.userName = 'testUser2';
-    }
+    this.devGame.gameInfo.leftUser.userSocket = client.id;
     this.gameRepository.set(client.id, this.devGame);
     this.server.in(client.id).socketsJoin('dev-test');
     this.server.to('dev-test').emit('enterGame');
@@ -66,11 +63,8 @@ export class TempGateway {
 
   @SubscribeMessage('testComplete')
   sendCompleteMessage(@ConnectedSocket() client: Socket) {
-    if (
-      client.id === this.devGame.gameInfo.leftUser.userSocket ||
-      client.id === this.devGame.gameInfo.rightUser.userSocket
-    ) {
-      const completeData: MatchData = this.gameRepository.size === 2 ? this.successData : this.failData;
+    if (client.id === this.devGame.gameInfo.leftUser.userSocket) {
+      const completeData: MatchData = this.successData;
       this.server.to('dev-test').emit('complete', completeData);
       this.server.to('dev-test').emit('init', this.devGame);
     }
