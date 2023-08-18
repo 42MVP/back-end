@@ -13,7 +13,7 @@ export const typeORMConfig: TypeOrmModuleAsyncOptions = {
       password: process.env.POSTGRES_PASSWORD,
       entities: [__dirname + '/../**/*.entity.{js,ts}'],
       synchronize: true,
-      logging: true,
+      //logging: true,
       namingStrategy: new SnakeNamingStrategy(),
     };
   },

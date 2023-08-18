@@ -15,6 +15,8 @@ import { UserAchievementModule } from './user-achievement/user-achievement.modul
 import { ConnectionModule } from './connection/connection.module';
 import { RepositoryModule } from './repository/repository.module';
 import { GameMatchingModule } from './game-matching/game-matching.module';
+import { GameModule } from './game/game.module';
+import { TempModule } from './temp/temp.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { GameMatchingModule } from './game-matching/game-matching.module';
     ChatModule,
     RepositoryModule,
     GameMatchingModule,
+    GameModule,
+    TempModule,
   ],
   controllers: [AppController],
   providers: [AppService],
