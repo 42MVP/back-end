@@ -15,6 +15,13 @@ interface MatchData {
   startAt: Date;
 }
 
+interface InitInfo {
+  background: string;
+  leftScore: number;
+  rightScore: number;
+  tableInfo: RenderInfo;
+}
+
 @WebSocketGateway()
 export class TempGateway {
   @WebSocketServer()
@@ -66,7 +73,13 @@ export class TempGateway {
     if (client.id === this.devGame.gameInfo.leftUser.userSocket) {
       const completeData: MatchData = this.successData;
       this.server.to('dev-test').emit('complete', completeData);
-      this.server.to('dev-test').emit('init', this.devGame);
+      const sendInit: InitInfo = {
+        background: this.devGame.gameInfo.backgroundColor,
+        leftScore: this.devGame.scoreInfo.leftScore,
+        rightScore: this.devGame.scoreInfo.rightScore,
+        tableInfo: this.devGame.renderInfo,
+      };
+      this.server.to('dev-test').emit('init', sendInit);
     }
   }
 }
