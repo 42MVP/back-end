@@ -29,6 +29,14 @@ export class TempGateway {
 
   private gameRepository: Map<string, Game> = new Map<string, Game>();
 
+  tempSetting: GameSetting = {
+    ballRad: 12.5,
+    paddleSpeed: 50,
+    gameWidth: 1100,
+    gameHeight: 700,
+    matchPoint: 5,
+  };
+
   devGame: Game = {
     gameInfo: {
       roomId: 42,
@@ -38,19 +46,11 @@ export class TempGateway {
     },
     scoreInfo: { leftScore: 0, rightScore: 0 },
     renderInfo: {
-      leftPaddle: { width: 20, height: 100, x: 0, y: 300 },
-      rightPaddle: { width: 20, height: 100, x: 800 - 20, y: 300 },
+      leftPaddle: { width: 20, height: 100, x: 0, y: this.tempSetting.gameHeight / 2 },
+      rightPaddle: { width: 20, height: 100, x: this.tempSetting.gameHeight - 20, y: this.tempSetting.gameHeight / 2 },
       ball: { x: 400, y: 300, dx: 1, dy: -1 },
     },
   };
-
-  // failData: MatchData = {
-  //   result: false,
-  //   leftUser: null,
-  //   rightUser: null,
-  //   gameRoomId: 0,
-  //   startAt: null,
-  // };
 
   successData: MatchData = {
     result: true,
