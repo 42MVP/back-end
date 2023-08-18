@@ -5,7 +5,7 @@ import { User } from '../common/entities/user.entity';
 import { Repository, UpdateResult } from 'typeorm';
 import { GameHistoryService } from '../game-history/game-history.service';
 import { UserAchievementService } from '../user-achievement/user-achievement.service';
-import { Achievement } from '../user-achievement/achievement';
+import { Achievement } from 'src/common/entities/achievement.entity';
 
 @Injectable()
 export class UserService {
@@ -14,6 +14,8 @@ export class UserService {
     private userRepository: Repository<User>,
     private gameHistoryService: GameHistoryService,
     private userAchievementService: UserAchievementService,
+    @InjectRepository(Achievement)
+    private achievementRespository: Repository<Achievement>,
   ) {}
 
   async create(user: User): Promise<User> {
@@ -41,13 +43,13 @@ export class UserService {
       where: {
         id: id,
       },
+      relations: { userAchievements: true },
     });
     if (!user) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
     user.gameHistories = await this.gameHistoryService.getGameHistry(id);
-    // ToDo: achievement refactoring
-    // user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(id));
+    user.achievements = await this.userAchievementService.getAchievement(id);
     return user;
   }
 
@@ -69,8 +71,7 @@ export class UserService {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
     user.gameHistories = await this.gameHistoryService.getGameHistry(user.id);
-    // ToDo: achievement refactoring
-    // user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(user.id));
+    user.achievements = await this.userAchievementService.getAchievement(user.id);
     return user;
   }
 

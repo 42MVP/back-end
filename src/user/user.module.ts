@@ -7,10 +7,11 @@ import { GameHistoryModule } from '../game-history/game-history.module';
 import { UserAchievementModule } from '../user-achievement/user-achievement.module';
 import { FriendModule } from 'src/friend/friend.module';
 import { BlockModule } from 'src/block/block.module';
+import { Achievement } from 'src/common/entities/achievement.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Achievement]),
     GameHistoryModule,
     UserAchievementModule,
     forwardRef(() => FriendModule),

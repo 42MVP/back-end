@@ -1,7 +1,6 @@
 import { BaseEntity, Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './user.entity';
-import { EAchievement } from '../enums';
-import { Achievement } from '../../user-achievement/achievement';
+import { Achievement } from './achievement.entity';
 
 @Entity()
 export class UserAchievement extends BaseEntity {
@@ -17,6 +16,6 @@ export class UserAchievement extends BaseEntity {
   @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   user: User;
 
-  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Achievement, achievement => achievement.id, { onDelete: 'CASCADE', eager: true })
   achievement: Achievement;
 }

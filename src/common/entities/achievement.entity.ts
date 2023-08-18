@@ -1,6 +1,7 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
 @Entity()
+@Unique(['name'])
 export class Achievement extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -13,4 +14,6 @@ export class Achievement extends BaseEntity {
 
   @Column({ type: 'varchar' })
   imageUrl: string;
+
+  isAchieved: boolean;
 }
