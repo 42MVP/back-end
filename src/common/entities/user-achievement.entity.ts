@@ -11,15 +11,12 @@ export class UserAchievement extends BaseEntity {
   @Column({ type: 'int' })
   userId: number;
 
+  @Column({ type: 'int' })
+  achievementId: number;
+
   @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
   user: User;
 
-  @Column({ type: 'enum', enum: EAchievement, nullable: false })
-  achievement: EAchievement;
-
-  public toAchievement() {
-    if (this.achievement == EAchievement.TEN_WINS) {
-      return Achievement.getTenWins();
-    }
-  }
+  @ManyToOne(() => User, user => user.id, { onDelete: 'CASCADE' })
+  achievement: Achievement;
 }

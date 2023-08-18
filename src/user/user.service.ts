@@ -47,7 +47,7 @@ export class UserService {
     }
     user.gameHistories = await this.gameHistoryService.getGameHistry(id);
     // ToDo: achievement refactoring
-    user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(id));
+    // user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(id));
     return user;
   }
 
@@ -70,7 +70,7 @@ export class UserService {
     }
     user.gameHistories = await this.gameHistoryService.getGameHistry(user.id);
     // ToDo: achievement refactoring
-    user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(user.id));
+    // user.achievements = Achievement.map(await this.userAchievementService.getUserAchievements(user.id));
     return user;
   }
 

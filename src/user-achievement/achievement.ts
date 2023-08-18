@@ -16,14 +16,14 @@ export class Achievement {
     return new Achievement(EAchievement.TEN_WINS, '10번 승리하면 얻을 수 있는 업적 입니다!', '');
   }
 
-  public static map(userAchievements: UserAchievement[]): Achievement[] {
-    const result: Achievement[] = [];
+  // public static map(userAchievements: UserAchievement[]): Achievement[] {
+  //   const result: Achievement[] = [];
 
-    for (const ua of userAchievements) {
-      const a: Achievement = ua.toAchievement();
-      result.push(a);
-    }
+  //   for (const ua of userAchievements) {
+  //     const a: Achievement = ua.toAchievement();
+  //     result.push(a);
+  //   }
 
-    return result;
-  }
+  //   return result;
+  // }
 }
