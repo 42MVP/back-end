@@ -149,8 +149,9 @@ export class ChatService {
       ChatRole.USER,
       this.defaultMuteTime,
     );
+
     await this.joinChatRoom(newChatUser);
-    return this.getChatRoomDto(newChatUser);
+    this.chatGateway.sendAddedRoom(newChatUser.userId, await this.getChatRoomDto(newChatUser));
   }
 
   async findFreshChannels(userId: number) {
@@ -202,7 +203,7 @@ export class ChatService {
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
     changedRole.userName = (await this.userRepository.findOne({ where: { id: targetUser.userId } })).userName;
     changedRole.changedRole = targetUser.role;
-    this.chatGateway.sendChangedUserRole(changedRole, targetUser.roomId);
+    this.chatGateway.sendUserMode({ roomId: targetUser.roomId, userId: targetUser.userId, role: targetUser.role });
     return;
   }
 
@@ -239,11 +240,12 @@ export class ChatService {
     this.isValidChatUserToChange(targetUser);
     if (prevStatus == ChatUserStatus.BAN) {
       await this.chatUserRepository.remove(targetUser);
-    } else {
-      targetUser.status = revertStatus.status;
-      targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
-      await this.chatUserRepository.save(targetUser);
+      return ChatUserStatus.BAN;
     }
+    targetUser.status = revertStatus.status;
+    targetUser.muteTime = this.updateMuteTime(targetUser, revertStatus);
+    await this.chatUserRepository.save(targetUser);
+    return ChatUserStatus.MUTE;
   }
 
   updateMuteTime(targetUser: ChatUser, newChatStatus: UpdateChatStatusDto): Date {
@@ -262,43 +264,70 @@ export class ChatService {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
     await this.isValidChatRoomToChage(newChatStatus.roomId);
+
+    const targetRoomId = execUser.roomId;
+    const targetUserId = newChatStatus.userId;
+
     switch (newChatStatus.status) {
       case ChatUserStatus.KICK:
         await this.kickChatUser(newChatStatus);
+        this.chatGateway.sendKick(targetUserId, { roomId: targetRoomId, userId: targetUserId });
+        this.chatGateway.leaveFromRoom(targetUserId, targetRoomId);
+        this.chatGateway.sendLeave({ roomId: targetRoomId, userId: targetUserId });
         break;
       case ChatUserStatus.BAN:
         await this.banChatUser(newChatStatus);
+        const user = await this.userRepository.findOne({ where: { id: targetUserId } });
+        this.chatGateway.leaveFromRoom(targetUserId, targetRoomId);
+        this.chatGateway.sendBan({
+          roomId: targetRoomId,
+          userId: targetUserId,
+          name: user?.userName,
+          avatarURL: 'will be added',
+        });
         break;
       case ChatUserStatus.MUTE:
         await this.muteChatUser(newChatStatus);
+        this.chatGateway.sendMute({
+          roomId: targetRoomId,
+          userId: targetUserId,
+          abongTime: newChatStatus.muteTime,
+        });
         break;
       case ChatUserStatus.NONE:
-        await this.revertChatStatus(newChatStatus);
+        const ret: ChatUserStatus = await this.revertChatStatus(newChatStatus);
+        if (ret === ChatUserStatus.BAN) {
+          this.chatGateway.sendUnban({ roomId: targetRoomId, userId: targetUserId });
+        } else {
+          this.chatGateway.sendMute({
+            roomId: targetRoomId,
+            userId: targetUserId,
+            abongTime: this.defaultMuteTime,
+          });
+        }
         break;
     }
-    const changedStatus: ChangedUserStatusDto = new ChangedUserStatusDto(
-      (await this.userRepository.findOne({ where: { id: newChatStatus.userId } })).userName,
-      newChatStatus.status,
-    );
-    const userSocket = this.userSocketRepository.find(newChatStatus.userId);
-    if (typeof userSocket === 'string')
-      this.chatGateway.sendChangedUserStatus(userSocket, changedStatus, newChatStatus.roomId);
-    return;
   }
 
   async joinChatRoom(chatUser: ChatUser) {
-    const userSocketId = this.userSocketRepository.find(chatUser.userId);
-    if (typeof userSocketId === 'string') {
-      this.chatGateway.joinChatRoom(userSocketId, chatUser);
-    }
     await this.chatUserRepository.save(chatUser);
+    const user = await this.userRepository.findOne({ where: { id: chatUser.userId } });
+
+    this.chatGateway.sendJoin({
+      roomId: chatUser.roomId,
+      userId: chatUser.userId,
+      name: user?.userName,
+      avatarURL: 'will be added',
+    });
+    this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
   }
 
   async leaveChatRoom(chatUser: ChatUser) {
-    const userSocketId = this.userSocketRepository.find(chatUser.userId);
-    if (typeof userSocketId === 'string') {
-      this.chatGateway.exitChatRoom(userSocketId, chatUser);
-    }
+    this.chatGateway.leaveFromRoom(chatUser.userId, chatUser.roomId);
+    this.chatGateway.sendLeave({
+      roomId: chatUser.roomId,
+      userId: chatUser.userId,
+    });
     await this.chatUserRepository.remove(chatUser);
   }
 
