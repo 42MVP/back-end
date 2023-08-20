@@ -14,7 +14,6 @@ import { GameHistoryModule } from './game-history/game-history.module';
 import { UserAchievementModule } from './user-achievement/user-achievement.module';
 import { ConnectionModule } from './connection/connection.module';
 import { RepositoryModule } from './repository/repository.module';
-import { GameMatchingModule } from './game-matching/game-matching.module';
 import { GameModule } from './game/game.module';
 import { TempModule } from './temp/temp.module';
 
@@ -36,7 +35,6 @@ import { TempModule } from './temp/temp.module';
     ConnectionModule,
     ChatModule,
     RepositoryModule,
-    GameMatchingModule,
     GameModule,
     TempModule,
   ],

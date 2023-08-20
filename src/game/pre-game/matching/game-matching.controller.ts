@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 import { GameMatchingService } from './game-matching.service';
@@ -12,12 +12,6 @@ export class GameMatchingController {
   applyQueue(@ExtractId() userId: number): Promise<void> {
     console.log('in-queue: ', userId);
     return this.gameMatchingService.applyQueue(userId);
-  }
-
-  @Post('invite')
-  @UseGuards(JwtAuthGuard)
-  inviteGame(@ExtractId() userId: number, @Body() body: { inviteeId: number }): Promise<void> {
-    return this.gameMatchingService.invite(userId, body.inviteeId);
   }
 
   @Post('cancel-queue')
