@@ -27,7 +27,7 @@ export class GameGateway {
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
       this.resetGame(game);
-      this.server.to(game.gameInfo.roomId.toString()).emit('initGame', game.renderInfo);
+      this.server.to(game.gameInfo.roomId.toString()).emit('init', game.renderInfo);
     }
     // 데이터 송신
     if (this.isGameEnd(game)) {
@@ -124,7 +124,7 @@ export class GameGateway {
   }
 
   // key 입력을 받았을때 내부 정보를 업데이트
-  @SubscribeMessage('keyUp')
+  @SubscribeMessage('arrowUp')
   handleKeyPressUp(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
     const userPaddle = this.findUserPaddle(client, game);
@@ -132,7 +132,7 @@ export class GameGateway {
     if (userPaddle.y > 0) userPaddle.y -= this.setting.paddleSpeed;
   }
 
-  @SubscribeMessage('keyDown')
+  @SubscribeMessage('arrowDown')
   handleKeyPressDown(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
     const userPaddle = this.findUserPaddle(client, game);
