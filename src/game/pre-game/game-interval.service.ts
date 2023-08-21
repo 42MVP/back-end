@@ -5,6 +5,7 @@ import { QueueRepository, rating, userId } from 'src/repository/queue.repository
 import { GameInvitationGateway } from './invitation/game-invitation.gateway';
 import { GameMatchingGateway } from './matching/game-matching.gateway';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @Injectable()
 export class GameIntervalService {
@@ -12,6 +13,7 @@ export class GameIntervalService {
     private readonly queueRepository: QueueRepository,
     private readonly matchingRepository: MatchingRepository,
     private readonly invitationRepository: InvitationRepository,
+    private readonly userStateRepository: UserStateRepository,
     private readonly gameMatchingGateway: GameMatchingGateway,
     private readonly gameInvitationGateway: GameInvitationGateway,
   ) {}
@@ -56,6 +58,8 @@ export class GameIntervalService {
 
     this.queueRepository.delete(user1Id);
     this.queueRepository.delete(user2Id);
+    this.userStateRepository.update(user1Id, UserState.IN_MATCHING);
+    this.userStateRepository.update(user2Id, UserState.IN_MATCHING);
     const matchingId: number = this.matchingRepository.save([user1Id, user2Id]);
     this.gameMatchingGateway.sendMatching(user1Id, matchingId);
     this.gameMatchingGateway.sendMatching(user2Id, matchingId);
@@ -67,6 +71,8 @@ export class GameIntervalService {
     expiredMatches.forEach((e: Matching) => {
       this.gameMatchingGateway.sendMatchingTimeout(e.matchingId, e.challengers[0], e.challengers[1]);
       this.matchingRepository.delete(e.matchingId);
+      this.userStateRepository.update(e.challengers[0], UserState.IDLE);
+      this.userStateRepository.update(e.challengers[1], UserState.IDLE);
     });
     return;
   }
@@ -91,6 +97,8 @@ export class GameIntervalService {
       if (new Date().getTime() - value.time.getTime() > INVITATION_TIMEOUT_MS) {
         this.gameInvitationGateway.sendInviteTimeout(value);
         this.invitationRepository.delete(key);
+        this.userStateRepository.update(value.inviteeId, UserState.IDLE);
+        this.userStateRepository.update(value.inviterId, UserState.IDLE);
       }
     });
   }

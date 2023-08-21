@@ -5,6 +5,7 @@ import { QueueRepository } from './queue.repository';
 import { MatchingRepository } from './matching.repository';
 import { GameRepository } from './game.repository';
 import { InvitationRepository } from './invitation.repository';
+import { UserStateRepository } from './user-state.repository';
 
 @Module({
   providers: [
@@ -14,6 +15,7 @@ import { InvitationRepository } from './invitation.repository';
     MatchingRepository,
     GameRepository,
     InvitationRepository,
+    UserStateRepository,
   ],
   exports: [
     UserSocketRepository,
@@ -22,6 +24,7 @@ import { InvitationRepository } from './invitation.repository';
     MatchingRepository,
     GameRepository,
     InvitationRepository,
+    UserStateRepository,
   ],
 })
 export class RepositoryModule {}

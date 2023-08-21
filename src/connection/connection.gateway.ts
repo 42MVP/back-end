@@ -10,12 +10,14 @@ import { Server, Socket } from 'socket.io';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { AuthService } from 'src/auth/auth.service';
 import { Logger } from '@nestjs/common';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @WebSocketGateway({ cors: true })
 export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly connectionService: ConnectionService,
     private readonly userSocketRepository: UserSocketRepository,
+    private readonly userStateRepository: UserStateRepository,
     private readonly authService: AuthService,
   ) {}
   @WebSocketServer()
@@ -29,6 +31,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     try {
       const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
       this.userSocketRepository.save(id, client.id);
+      this.userStateRepository.save(id, UserState.IDLE);
       const userRooms: number[] = await this.connectionService.getUserRoomId(id);
       console.log('connect room:', userRooms);
       userRooms.forEach(e => {
@@ -47,6 +50,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     try {
       const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
       this.userSocketRepository.delete(id);
+      this.userStateRepository.delete(id);
     } catch (e) {
       console.error('JWT 인증 실패');
     }

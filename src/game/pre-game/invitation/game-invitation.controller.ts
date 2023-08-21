@@ -12,6 +12,6 @@ export class GameInvitationController {
   inviteUser(@ExtractId() inviterId: number, @Param('id') inviteeId: number) {
     console.log('inviter: ', inviterId);
     console.log('invitee: ', inviteeId);
-    this.gameInvitationService.invite({ inviter: inviterId, invitee: inviteeId });
+    return this.gameInvitationService.invite({ inviter: inviterId, invitee: inviteeId });
   }
 }

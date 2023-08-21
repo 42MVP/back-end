@@ -2,6 +2,7 @@ import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSo
 import { Server, Socket } from 'socket.io';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 // import { TempGateway } from 'src/temp/temp.gateway';
 
 const GameInviteEvent = {
@@ -19,6 +20,7 @@ export class GameInvitationGateway {
   constructor(
     private readonly invitationRepository: InvitationRepository,
     private readonly userSocketRepository: UserSocketRepository, // private readonly tempGateway: TempGateway
+    private readonly userStateRepository: UserStateRepository,
   ) {}
 
   @WebSocketServer()
@@ -46,6 +48,8 @@ export class GameInvitationGateway {
     if (inviterSocket) this.server.to(inviteeSocket).emit(GameInviteEvent.inviteAccepted);
     if (inviteeSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteAccepted);
     this.invitationRepository.delete(acceptInviteDto.invitationId);
+    this.userStateRepository.update(invitation.inviteeId, UserState.IN_GAME);
+    this.userStateRepository.update(invitation.inviterId, UserState.IN_GAME);
     //this.tempGateway.joinTestGameRoom(matching.challengers[0], user1Socket, matching.challengers[1], user2Socket);
   }
 
@@ -65,6 +69,8 @@ export class GameInvitationGateway {
     if (inviterSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteRejected);
 
     this.invitationRepository.delete(rejectInviteDto.invitationId);
+    this.userStateRepository.update(invitation.inviteeId, UserState.IDLE);
+    this.userStateRepository.update(invitation.inviterId, UserState.IDLE);
   }
 
   sendInvite(

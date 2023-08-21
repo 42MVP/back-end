@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { Repository } from 'typeorm';
 import { GameInvitationGateway } from './game-invitation.gateway';
 import { InvitationRepository } from 'src/repository/invitation.repository';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @Injectable()
 export class GameInvitationService {
@@ -12,12 +13,15 @@ export class GameInvitationService {
     private readonly userRepository: Repository<User>,
     private readonly invitationRepository: InvitationRepository,
     private readonly gameInvitationGateway: GameInvitationGateway,
+    private readonly userStateRepository: UserStateRepository,
   ) {}
 
   async invite(ids: { inviter: number; invitee: number }): Promise<void> {
-    // TODO: [게임, 큐, 매칭, 초대] 중에는 초대 받거나 받을 수 없음
-    const inviter: User = await this.userRepository.findOne({ where: { id: ids.inviter } });
+    const inviterState = this.userStateRepository.find(ids.inviter);
+    const inviteeState = this.userStateRepository.find(ids.invitee);
 
+    if (inviterState !== UserState.IDLE || inviteeState !== UserState.IDLE) throw new BadRequestException('초대 불가');
+    const inviter: User = await this.userRepository.findOne({ where: { id: ids.inviter } });
     const invitationId = this.invitationRepository.save({
       inviterId: ids.inviter,
       inviteeId: ids.invitee,
@@ -33,6 +37,8 @@ export class GameInvitationService {
       invitationId,
     );
     if (!isSuccess) this.invitationRepository.delete(invitationId);
+    this.userStateRepository.update(ids.invitee, UserState.IN_INVITATION);
+    this.userStateRepository.update(ids.inviter, UserState.IN_INVITATION);
 
     return;
   }

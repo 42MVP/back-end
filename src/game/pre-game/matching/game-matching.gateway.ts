@@ -6,6 +6,7 @@ import { QueueRepository } from 'src/repository/queue.repository';
 import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 // import { TempGateway } from 'src/temp/temp.gateway';
 
 const GameMatchingEvent = {
@@ -22,6 +23,7 @@ export class GameMatchingGateway {
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
     private readonly queueRepository: QueueRepository, // private readonly tempGateway: TempGateway,
+    private readonly userStateRepository: UserStateRepository,
   ) {}
 
   @WebSocketServer()
@@ -72,6 +74,9 @@ export class GameMatchingGateway {
     if (user1Socket !== undefined) this.server.to(user1Socket).socketsLeave(roomName);
     if (user2Socket !== undefined) this.server.to(user2Socket).socketsLeave(roomName);
 
+    this.userStateRepository.update(matching.challengers[0], UserState.IN_GAME);
+    this.userStateRepository.update(matching.challengers[1], UserState.IN_GAME);
+
     // 게임룸 입장시키기
     // this.tempGateway.joinTestGameRoom(matching.challengers[0], user1Socket, matching.challengers[1], user2Socket);
   }
@@ -101,5 +106,8 @@ export class GameMatchingGateway {
     const user2Socket: string | undefined = this.userSocketRepository.find(matching.challengers[1]);
     if (user1Socket !== undefined) this.server.to(user1Socket).socketsLeave(roomName);
     if (user2Socket !== undefined) this.server.to(user2Socket).socketsLeave(roomName);
+
+    this.userStateRepository.update(matching.challengers[0], UserState.IDLE);
+    this.userStateRepository.update(matching.challengers[1], UserState.IDLE);
   }
 }
