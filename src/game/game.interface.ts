@@ -45,20 +45,20 @@ export class Game {
   }
 }
 
-interface GameInfo {
+export interface GameInfo {
   roomId: number;
   leftUser: GameUser;
   rightUser: GameUser;
   backgroundColor: string;
 }
 
-interface GameUser {
+export interface GameUser {
   userId: number;
   userName: string;
   userSocket: string;
 }
 
-interface ScoreInfo {
+export interface ScoreInfo {
   leftScore: number;
   rightScore: number;
 }
@@ -69,21 +69,21 @@ export interface RenderInfo {
   ball: Ball;
 }
 
-interface Paddle {
+export interface Paddle {
   width: number;
   height: number;
   x: number;
   y: number;
 }
 
-interface Ball {
+export interface Ball {
   x: number;
   y: number;
   dx: number;
   dy: number;
 }
 
-interface GameSetting {
+export interface GameSetting {
   ballRad: number;
   paddleSpeed: number;
   gameWidth: number;
@@ -91,7 +91,7 @@ interface GameSetting {
   matchPoint: number;
 }
 
-interface GameResult {
+export interface GameResult {
   winId: number;
   defeatId: number;
   winScore: number;
