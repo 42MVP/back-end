@@ -89,7 +89,10 @@ export class UserService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<void> {
+  async update(id: number, updateUserDto: UpdateUserDto, avatarUrl: string): Promise<void> {
+    console.log('=======================');
+    console.log(avatarUrl);
+    console.log('=======================');
     const result: UpdateResult = await this.userRepository
       .update(
         {
@@ -97,7 +100,7 @@ export class UserService {
         },
         {
           userName: updateUserDto.name,
-          // avatar: updateUserDto.avatar,
+          avatar: avatarUrl,
           isAuth: updateUserDto.isAuth,
         },
       )

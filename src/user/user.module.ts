@@ -11,19 +11,21 @@ import { Achievement } from 'src/common/entities/achievement.entity';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { multerOptionsFactory } from 'src/configs/multer.config';
+import { S3Module } from 'src/s3/s3.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Achievement]),
-    MulterModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: multerOptionsFactory,
-      inject: [ConfigService],
-    }),
+    // MulterModule.registerAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: multerOptionsFactory,
+    //   inject: [ConfigService],
+    // }),
     GameHistoryModule,
     UserAchievementModule,
     forwardRef(() => FriendModule),
     forwardRef(() => BlockModule),
+    S3Module,
   ],
   controllers: [UserController],
   providers: [UserService],
