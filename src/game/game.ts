@@ -155,3 +155,34 @@ export class EmitInit {
     this.tableInfo = game.renderInfo;
   }
 }
+
+export interface EmitInviteError {
+  msg: string;
+}
+
+export interface EmitInvite {
+  inviterName: string;
+  inviterAvatarUrl: string;
+  invitationId: number;
+}
+
+export class EmitInviteConfirm {
+  result: boolean;
+  leftUser: GameUser | undefined;
+  rightUser: GameUser | undefined;
+  gameRoomId: number | undefined;
+
+  constructor(game: Game | null) {
+    if (game) {
+      this.result = true;
+      this.leftUser = game.gameInfo.leftUser;
+      this.rightUser = game.gameInfo.rightUser;
+      this.gameRoomId = game.gameInfo.roomId;
+    } else {
+      this.result = false;
+      this.leftUser = undefined;
+      this.rightUser = undefined;
+      this.gameRoomId = undefined;
+    }
+  }
+}
