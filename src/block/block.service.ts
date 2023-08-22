@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Block } from '../common/entities/block.entity';
 import { User } from '../common/entities/user.entity';
@@ -36,5 +36,18 @@ export class BlockService {
     if (result.affected == 0) {
       throw new NotFoundException('해당 유저를 차단하고 있지 않습니다!');
     }
+  }
+
+  async isBlock(id: number, target: number): Promise<boolean> {
+    let result = false;
+
+    (await this.getBlockList(id)).forEach(user => {
+      if (user.id == target) {
+        result = true;
+        return;
+      }
+    });
+
+    return result;
   }
 }

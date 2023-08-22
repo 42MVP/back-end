@@ -16,32 +16,6 @@ export class FriendService {
   ) {}
 
   async getFriendsList(id: number): Promise<User[]> {
-    // const friendships = await this.friendshipRepository.find({
-    //   where: {
-    //     fromId: id,
-    //   },
-    // });
-    // return await this.userRepository.find({
-    //   where: {
-    //     id: In(friendships.map(friendship => friendship.toId)),
-    //   },
-    // });
-
-    // return await this.userRepository
-    //   .createQueryBuilder('user')
-    //   .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')
-    //   .where(subQuery => {
-    //     const subQueryBuilder = subQuery
-    //       .subQuery()
-    //       .select('friendship.to_id')
-    //       .from(Friendship, 'friendship')
-    //       .where('friendship.from_id = :id', { id: 1 })
-    //       .getQuery();
-
-    //     return 'friendship.to_id IN ' + subQueryBuilder;
-    //   })
-    //   .getMany();
-
     return await this.userRepository
       .createQueryBuilder('user')
       .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')
@@ -62,5 +36,18 @@ export class FriendService {
     if (result.affected == 0) {
       throw new NotFoundException('해당 유저를 팔로우하고 있지 않습니다!');
     }
+  }
+
+  async isFriend(id: number, target: number): Promise<boolean> {
+    let result = false;
+
+    (await this.getFriendsList(id)).forEach(user => {
+      if (user.id == target) {
+        result = true;
+        return;
+      }
+    });
+
+    return result;
   }
 }
