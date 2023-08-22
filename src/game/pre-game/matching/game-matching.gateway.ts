@@ -64,7 +64,12 @@ export class GameMatchingGateway {
     const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
     const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
 
-    const newGame: Game | null = await this.gameConnectGateway.createNewGame(matching, user1Socket, user2Socket);
+    const newGame: Game | null = await this.gameConnectGateway.createNewGame(
+      matching.user1Id,
+      matching.user2Id,
+      user1Socket,
+      user2Socket,
+    );
     const confirmData: EmitConfirm = new EmitConfirm(newGame); // newGame ? Game.result == true:  Game.result == false;
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
 
@@ -73,7 +78,7 @@ export class GameMatchingGateway {
     if (user2Socket !== undefined) this.server.to(user2Socket).emit(GameMatchingEvent.confirm, confirmData);
 
     // changeState();
-    this.gameConnectGateway.updateGameUserState(matching, confirmData);
+    this.gameConnectGateway.updateInGameStatus(matching.user1Id, matching.user2Id, confirmData);
 
     // enter to the gameRoom;
     if (newGame) this.gameConnectGateway.enterGameRoom(newGame);

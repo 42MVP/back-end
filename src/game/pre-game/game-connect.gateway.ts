@@ -3,7 +3,6 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { User } from 'src/common/entities/user.entity';
 import { GameRepository } from 'src/repository/game.repository';
-import { Matching } from 'src/repository/matching.repository';
 import { Repository } from 'typeorm';
 import { EmitConfirm, Game, GameUser } from '../game';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
@@ -21,12 +20,13 @@ export class GameConnectGateway {
   server: Server;
 
   async createNewGame(
-    matchInfo: Matching,
+    user1Id: number,
+    user2Id: number,
     user1Socket: string | undefined,
     user2Socket: string | undefined,
   ): Promise<Game | null> {
-    const user1: User = await this.userRepository.findOne({ where: { id: matchInfo.user1Id } });
-    const user2: User = await this.userRepository.findOne({ where: { id: matchInfo.user2Id } });
+    const user1: User = await this.userRepository.findOne({ where: { id: user1Id } });
+    const user2: User = await this.userRepository.findOne({ where: { id: user2Id } });
     if (!user1 || !user2 || user1Socket === undefined || user2Socket === undefined) {
       return null;
     } else {
@@ -36,13 +36,13 @@ export class GameConnectGateway {
     }
   }
 
-  updateGameUserState(matching: Matching, emitResult: EmitConfirm) {
+  updateInGameStatus(user1Id: number, user2Id: number, emitResult: EmitConfirm) {
     if (emitResult.result === true) {
-      this.userStateRepository.update(matching.user1Id, UserState.IN_GAME);
-      this.userStateRepository.update(matching.user2Id, UserState.IN_GAME);
+      this.userStateRepository.update(user1Id, UserState.IN_GAME);
+      this.userStateRepository.update(user2Id, UserState.IN_GAME);
     } else {
-      this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-      this.userStateRepository.update(matching.user2Id, UserState.IDLE);
+      this.userStateRepository.update(user1Id, UserState.IDLE);
+      this.userStateRepository.update(user2Id, UserState.IDLE);
     }
   }
 
