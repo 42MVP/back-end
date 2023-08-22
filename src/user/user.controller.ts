@@ -12,6 +12,7 @@ import { FriendService } from 'src/friend/friend.service';
 import { BlockService } from 'src/block/block.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { avatarValidatPipe } from 'src/common/pipes/avatar-validate.pipe';
+import { S3Service } from 'src/s3/s3.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -20,6 +21,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly friendshipService: FriendService,
     private readonly blockService: BlockService,
+    private readonly s3Service: S3Service,
   ) {}
 
   @Get('search')
@@ -63,6 +65,7 @@ export class UserController {
     @UploadedFile(avatarValidatPipe) avatar: Express.MulterS3.File,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<void> {
-    return await this.userService.update(id, updateUserDto);
+    const url = await this.s3Service.avatarUpload(avatar);
+    return await this.userService.update(id, updateUserDto, url);
   }
 }
