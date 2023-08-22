@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Game } from 'src/game/game.interface';
+import { Game } from 'src/game/game';
 
 type GameId = number;
 type GameUserSocket = string;

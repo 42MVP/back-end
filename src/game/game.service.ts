@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GameHistory } from 'src/common/entities/game-history.entity';
 import { Repository } from 'typeorm';
-import { GameResult } from './game.interface';
+import { GameResult } from './game';
 
 @Injectable()
 export class GameService {
