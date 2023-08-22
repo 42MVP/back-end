@@ -9,7 +9,7 @@ export class GameInvitationController {
 
   @Post('invite/:id')
   @UseGuards(JwtAuthGuard)
-  inviteUser(@ExtractId() inviterId: number, @Param('id') inviteeId: number) {
+  inviteUser(@ExtractId() inviterId: number, @Param('id') inviteeId: number): Promise<number> {
     console.log('inviter: ', inviterId);
     console.log('invitee: ', inviteeId);
     return this.gameInvitationService.invite({ inviter: inviterId, invitee: inviteeId });

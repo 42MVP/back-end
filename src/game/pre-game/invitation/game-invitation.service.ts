@@ -16,7 +16,7 @@ export class GameInvitationService {
     private readonly userStateRepository: UserStateRepository,
   ) {}
 
-  async invite(ids: { inviter: number; invitee: number }): Promise<void> {
+  async invite(ids: { inviter: number; invitee: number }): Promise<number> {
     const inviterState = this.userStateRepository.find(ids.inviter);
     const inviteeState = this.userStateRepository.find(ids.invitee);
 
@@ -36,10 +36,14 @@ export class GameInvitationService {
       ids.invitee,
       invitationId,
     );
-    if (!isSuccess) this.invitationRepository.delete(invitationId);
-    this.userStateRepository.update(ids.invitee, UserState.IN_INVITATION);
-    this.userStateRepository.update(ids.inviter, UserState.IN_INVITATION);
+    if (isSuccess) {
+      this.userStateRepository.update(ids.invitee, UserState.IN_INVITATION);
+      this.userStateRepository.update(ids.inviter, UserState.IN_INVITATION);
+    } else {
+      this.invitationRepository.delete(invitationId);
+      throw new BadRequestException('접속 상태 체크 바람');
+    }
 
-    return;
+    return invitationId;
   }
 }
