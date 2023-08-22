@@ -73,7 +73,7 @@ export class GameIntervalService {
 
     matchings.forEach((value: Matching, key: number) => {
       if (new Date().getTime() - value.time.getTime() > MATCHING_TIMEOUT_MS) {
-        this.gameMatchingGateway.sendMatchingTimeout(key, value.user1Id, value.user2Id);
+        this.gameMatchingGateway.sendMatchingTimeout(value.user1Id, value.user2Id);
         this.matchingRepository.delete(key);
         this.userStateRepository.update(value.user1Id, UserState.IDLE);
         this.userStateRepository.update(value.user2Id, UserState.IDLE);
