@@ -7,7 +7,7 @@ import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-import { EmitConfirm, EmitMatched, Game } from 'src/game/game.interface';
+import { EmitConfirm, EmitMatched, Game } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
 
 const GameMatchingEvent = {

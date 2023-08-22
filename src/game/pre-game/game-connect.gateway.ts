@@ -5,7 +5,7 @@ import { User } from 'src/common/entities/user.entity';
 import { GameRepository } from 'src/repository/game.repository';
 import { Matching } from 'src/repository/matching.repository';
 import { Repository } from 'typeorm';
-import { EmitConfirm, Game, GameUser } from '../game.interface';
+import { EmitConfirm, Game, GameUser } from '../game';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @WebSocketGateway()
