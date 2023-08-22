@@ -57,10 +57,10 @@ export class UserController {
   }
 
   @Put()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('avatar'))
   async update(
     @ExtractId() id: number,
-    @UploadedFile(avatarValidatPipe) file: Express.MulterS3.File,
+    @UploadedFile(avatarValidatPipe) avatar: Express.MulterS3.File,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<void> {
     return await this.userService.update(id, updateUserDto);
