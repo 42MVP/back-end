@@ -54,8 +54,10 @@ export class UserController {
   }
 
   @Get()
-  async finAll() {
-    return await this.userService.findAll();
+  async finAll(): Promise<SearchResponseDto[]> {
+    const userList: User[] = await this.userService.findAll();
+    const searchResponseList: SearchResponseDto[] = userList.map(user => new SearchResponseDto(user));
+    return searchResponseList;
   }
 
   @Put()
