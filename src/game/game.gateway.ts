@@ -1,7 +1,7 @@
 import { ConnectedSocket, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { Ball, Game, GameResult, GameSetting, Paddle } from './game.interface';
+import { Ball, Game, GameResult, GameSetting, Paddle } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 
 @WebSocketGateway()
@@ -12,11 +12,13 @@ export class GameGateway {
   server: Server;
 
   setting: GameSetting = {
-    ballRad: 12.5,
-    paddleSpeed: 50,
     gameWidth: 1100,
     gameHeight: 700,
     matchPoint: 5,
+    paddleWidth: 20,
+    paddleHeight: 100,
+    paddleSpeed: 50,
+    ballRad: 12.5,
   };
 
   // send_all() -> callback function;
