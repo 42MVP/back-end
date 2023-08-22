@@ -90,9 +90,6 @@ export class UserService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto, avatarUrl: string): Promise<void> {
-    console.log('=======================');
-    console.log(avatarUrl);
-    console.log('=======================');
     const result: UpdateResult = await this.userRepository
       .update(
         {
@@ -101,7 +98,7 @@ export class UserService {
         {
           userName: updateUserDto.name,
           avatar: avatarUrl,
-          isAuth: updateUserDto.isAuth,
+          isAuth: this.booleanify(updateUserDto.isAuth),
         },
       )
       .catch(() => {
@@ -110,5 +107,11 @@ export class UserService {
     if (result.affected == 0) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
+  }
+
+  booleanify(value: string): boolean {
+    const truthy: string[] = ['true', 'True', '1'];
+
+    return truthy.includes(value);
   }
 }
