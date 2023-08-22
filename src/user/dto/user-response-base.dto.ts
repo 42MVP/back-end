@@ -1,4 +1,3 @@
-import { Achievement } from 'src/common/entities/achievement.entity';
 import { User } from 'src/common/entities/user.entity';
 import { AchievementResponseDto } from './achievement-response.dto';
 
