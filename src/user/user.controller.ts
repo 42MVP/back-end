@@ -67,7 +67,8 @@ export class UserController {
     @UploadedFile(avatarValidatPipe) avatar: Express.MulterS3.File,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<void> {
-    const url = await this.s3Service.avatarUpload(avatar);
+    const user: User = await this.userService.findOneById(id);
+    const url: string = await this.s3Service.avatarUpload(avatar, user.userName);
     return await this.userService.update(id, updateUserDto, url);
   }
 }
