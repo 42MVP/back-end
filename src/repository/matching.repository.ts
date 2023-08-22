@@ -1,89 +1,48 @@
 import { Injectable } from '@nestjs/common';
 
-export type matchingId = number;
-export type userId = number;
-export type challengers = Record<userId, userId>;
-
 export interface Matching {
-  matchingId: number;
-  challengers: Record<userId, userId>;
+  user1Id: number;
+  user2Id: number;
   accept: boolean;
   time: Date;
 }
 
-export class MatchingArray {
+@Injectable()
+export class MatchingRepository {
   private index: number;
-  private matchings: Array<Matching>;
+  private readonly matchingMap: Map<number, Matching>;
 
   constructor() {
     this.index = 0;
-    this.matchings = new Array();
+    this.matchingMap = new Map<number, Matching>();
   }
 
-  private get(key: matchingId): Matching | undefined {
-    return this.matchings.find(e => e.matchingId === key);
+  find(matchingId: number): Matching | undefined {
+    return this.matchingMap.get(matchingId);
   }
 
-  private set(element: Matching) {
-    this.matchings.push(element);
+  findAll(): Map<number, Matching> {
+    return this.matchingMap;
   }
 
-  toArray(): Array<Matching> {
-    return this.matchings;
-  }
-
-  delete(key: matchingId) {
-    this.matchings = this.matchings.filter(e => e.matchingId !== key);
-  }
-
-  find(key: matchingId): Matching | undefined {
-    return this.matchings.find((e: Matching) => e.matchingId === key);
-  }
-
-  private findIndex(key: matchingId) {
-    return this.matchings.findIndex((e: Matching) => e.matchingId === key);
-  }
-
-  update(matching: Matching) {
-    const index = this.findIndex(matching.matchingId);
-    if (index === -1) return;
-    this.matchings[index] = matching;
-  }
-
-  save(ids: challengers): matchingId {
+  save(user1Id: number, user2Id: number): number {
     const curIndex = this.index;
-    this.set({ matchingId: this.index, challengers: ids, accept: false, time: new Date() });
+    this.matchingMap.set(curIndex, {
+      user1Id: user1Id,
+      user2Id: user2Id,
+      accept: false,
+      time: new Date(),
+    });
     this.index++;
 
     return curIndex;
   }
-}
 
-@Injectable()
-export class MatchingRepository {
-  private readonly matchingArray: MatchingArray;
-
-  constructor() {
-    this.matchingArray = new MatchingArray();
+  update(matchingId: number, matching: Matching): void {
+    this.matchingMap.set(matchingId, matching);
   }
 
-  find(matchingId: matchingId): Matching | undefined {
-    return this.matchingArray.find(matchingId);
-  }
-
-  findAll(): MatchingArray {
-    return this.matchingArray;
-  }
-
-  save(challengersId: Record<userId, userId>): number {
-    return this.matchingArray.save(challengersId);
-  }
-
-  update(matching: Matching) {
-    this.matchingArray.update(matching);
-  }
-
-  delete(id: matchingId): void {
-    return this.matchingArray.delete(id);
+  delete(matchingId: number): boolean {
+    return this.matchingMap.delete(matchingId);
   }
 }

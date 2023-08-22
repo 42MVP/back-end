@@ -60,31 +60,24 @@ export class GameIntervalService {
     this.queueRepository.delete(user2Id);
     this.userStateRepository.update(user1Id, UserState.IN_MATCHING);
     this.userStateRepository.update(user2Id, UserState.IN_MATCHING);
-    const matchingId: number = this.matchingRepository.save([user1Id, user2Id]);
+    const matchingId: number = this.matchingRepository.save(user1Id, user2Id);
     this.gameMatchingGateway.sendMatching(user1Id, matchingId);
     this.gameMatchingGateway.sendMatching(user2Id, matchingId);
   }
 
   removeExpiredMatching(): void {
-    const expiredMatches = this.getExpiredMatches();
-
-    expiredMatches.forEach((e: Matching) => {
-      this.gameMatchingGateway.sendMatchingTimeout(e.matchingId, e.challengers[0], e.challengers[1]);
-      this.matchingRepository.delete(e.matchingId);
-      this.userStateRepository.update(e.challengers[0], UserState.IDLE);
-      this.userStateRepository.update(e.challengers[1], UserState.IDLE);
-    });
-    return;
-  }
-
-  getExpiredMatches(): Array<Matching> {
     const MATCHING_TIMEOUT_MS = 15000;
-    const matchings: Array<Matching> = this.matchingRepository.findAll().toArray();
+    const matchings: Map<number, Matching> = this.matchingRepository.findAll();
 
     console.log('matchings: ', matchings);
-    return matchings.filter(e => {
-      if (new Date().getTime() - e.time.getTime() > MATCHING_TIMEOUT_MS) return true;
-      return false;
+
+    matchings.forEach((value: Matching, key: number) => {
+      if (new Date().getTime() - value.time.getTime() > MATCHING_TIMEOUT_MS) {
+        this.gameMatchingGateway.sendMatchingTimeout(key, value.user1Id, value.user2Id);
+        this.matchingRepository.delete(key);
+        this.userStateRepository.update(value.user1Id, UserState.IDLE);
+        this.userStateRepository.update(value.user2Id, UserState.IDLE);
+      }
     });
   }
 
