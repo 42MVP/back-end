@@ -1,4 +1,4 @@
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity()
@@ -29,9 +29,9 @@ export class GameHistory extends BaseEntity {
   @Column({ type: 'int' })
   loserId: number;
 
-  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE', eager: true })
   winner: User;
 
-  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, user => user.gameHistories, { onDelete: 'CASCADE', eager: true })
   loser: User;
 }
