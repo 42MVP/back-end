@@ -96,8 +96,8 @@ export class UserService {
           id: id,
         },
         {
-          userName: updateUserDto.userName,
-          avatar: updateUserDto.avatar,
+          userName: updateUserDto.name,
+          // avatar: updateUserDto.avatar,
           isAuth: updateUserDto.isAuth,
         },
       )
