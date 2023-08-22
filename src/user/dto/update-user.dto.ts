@@ -9,5 +9,5 @@ export class UpdateUserDto {
   @IsOptional()
   isAuth: boolean;
 
-  avatar: Buffer;
+  avatar: string;
 }

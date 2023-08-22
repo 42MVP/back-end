@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-// import { TempGateway } from 'src/temp/temp.gateway';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -22,7 +21,7 @@ export class GameMatchingGateway {
     private readonly userRepository: Repository<User>,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
-    private readonly queueRepository: QueueRepository, // private readonly tempGateway: TempGateway,
+    private readonly queueRepository: QueueRepository,
     private readonly userStateRepository: UserStateRepository,
   ) {}
 
@@ -57,7 +56,7 @@ export class GameMatchingGateway {
     // 2명 수락
     if (matching.accept === false) {
       matching.accept = true;
-      this.matchingRepository.update(matching);
+      this.matchingRepository.update(acceptMatchingDto.matchingId, matching);
       return;
     }
 
@@ -69,13 +68,13 @@ export class GameMatchingGateway {
     this.server.to(roomName).emit(GameMatchingEvent.confirm, true);
 
     // 매칭 소켓 룸에서 삭제하기
-    const user1Socket: string | undefined = this.userSocketRepository.find(matching.challengers[0]);
-    const user2Socket: string | undefined = this.userSocketRepository.find(matching.challengers[1]);
+    const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
+    const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
     if (user1Socket !== undefined) this.server.to(user1Socket).socketsLeave(roomName);
     if (user2Socket !== undefined) this.server.to(user2Socket).socketsLeave(roomName);
 
-    this.userStateRepository.update(matching.challengers[0], UserState.IN_GAME);
-    this.userStateRepository.update(matching.challengers[1], UserState.IN_GAME);
+    this.userStateRepository.update(matching.user1Id, UserState.IN_GAME);
+    this.userStateRepository.update(matching.user2Id, UserState.IN_GAME);
 
     // 게임룸 입장시키기
     // this.tempGateway.joinTestGameRoom(matching.challengers[0], user1Socket, matching.challengers[1], user2Socket);
@@ -89,8 +88,8 @@ export class GameMatchingGateway {
 
     // 거절 당한 유저 찾기
     let noRejectedUserId: number;
-    if (matching.challengers[0] === rejectMatchingDto.userId) noRejectedUserId = matching.challengers[1];
-    else noRejectedUserId = matching.challengers[0];
+    if (matching.user1Id === rejectMatchingDto.userId) noRejectedUserId = matching.user2Id;
+    else noRejectedUserId = matching.user1Id;
 
     // 거절 당한 유저한테 메세지 보내기
     const noRejecter: string | undefined = this.userSocketRepository.find(noRejectedUserId);
@@ -102,12 +101,12 @@ export class GameMatchingGateway {
 
     // 매칭 소켓 룸에서 삭제하기
     const roomName = rejectMatchingDto.matchingId.toString();
-    const user1Socket: string | undefined = this.userSocketRepository.find(matching.challengers[0]);
-    const user2Socket: string | undefined = this.userSocketRepository.find(matching.challengers[1]);
+    const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
+    const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
     if (user1Socket !== undefined) this.server.to(user1Socket).socketsLeave(roomName);
     if (user2Socket !== undefined) this.server.to(user2Socket).socketsLeave(roomName);
 
-    this.userStateRepository.update(matching.challengers[0], UserState.IDLE);
-    this.userStateRepository.update(matching.challengers[1], UserState.IDLE);
+    this.userStateRepository.update(matching.user1Id, UserState.IDLE);
+    this.userStateRepository.update(matching.user2Id, UserState.IDLE);
   }
 }

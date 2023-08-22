@@ -1,8 +1,9 @@
-import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { UserStatus } from '../enums';
 import { FtProfile } from '../../common/types/ftProfile';
 import { GameHistory } from './game-history.entity';
-import { Achievement } from '../../user-achievement/achievement';
+import { Achievement } from './achievement.entity';
+import { UserAchievement } from './user-achievement.entity';
 
 @Entity()
 export class User extends BaseEntity {
@@ -19,7 +20,7 @@ export class User extends BaseEntity {
   isAuth: boolean;
 
   @Column({ type: 'bytea', nullable: true })
-  avatar: Buffer;
+  avatar: string;
 
   @Column({ type: 'varchar', nullable: true })
   email: string;
@@ -35,6 +36,9 @@ export class User extends BaseEntity {
 
   @Column({ type: 'int', default: 0 })
   rating: number;
+
+  @OneToMany(() => UserAchievement, userAchievement => userAchievement.user)
+  userAchievements: UserAchievement[];
 
   gameHistories: GameHistory[];
 

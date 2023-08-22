@@ -4,20 +4,49 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../common/entities/user.entity';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { SearchQueryDto } from './dto/search-query.dto';
+import { SearchResponseDto } from './dto/search-response.dto';
+import { MeUserResponseDto } from './dto/me-user-response.dto';
+import { ExtractId } from 'src/common/decorators/extract-id.decorator';
+import { OtherUserResponseDto } from './dto/other-user-response.dto';
+import { FriendService } from 'src/friend/friend.service';
+import { BlockService } from 'src/block/block.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly friendshipService: FriendService,
+    private readonly blockService: BlockService,
+  ) {}
 
   @Get('search')
-  async findByUsername(@Query() query: SearchQueryDto) {
-    return await this.userService.findOneByUsername(query.username);
+  async findByUsername(@Query() query: SearchQueryDto): Promise<SearchResponseDto[]> {
+    const userList: User[] = await this.userService.findAllByUsername(query.name);
+    const searchResponseList: SearchResponseDto[] = userList.map(user => new SearchResponseDto(user));
+    return searchResponseList;
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: number): Promise<User> {
-    return await this.userService.findOneById(id);
+  @Get('me')
+  async getMyProfile(@ExtractId() id: number): Promise<MeUserResponseDto> {
+    const user: User = await this.userService.findOneById(id);
+    return new MeUserResponseDto(user);
+  }
+
+  @Get('id/:id')
+  async findOneById(@ExtractId() myId: number, @Param('id') id: number): Promise<OtherUserResponseDto> {
+    const isFriend = await this.friendshipService.isFriend(myId, id);
+    const isBlock = await this.blockService.isBlock(myId, id);
+    const user: User = await this.userService.findOneById(id);
+    return new OtherUserResponseDto(user, isFriend, isBlock);
+  }
+
+  @Get('name/:name')
+  async findOneByName(@ExtractId() myId: number, @Param('name') name: string): Promise<OtherUserResponseDto> {
+    const user: User = await this.userService.findOneByUsername(name);
+    const isFriend = await this.friendshipService.isFriend(myId, user.id);
+    const isBlock = await this.blockService.isBlock(myId, user.id);
+    return new OtherUserResponseDto(user, isFriend, isBlock);
   }
 
   @Get()
@@ -25,8 +54,8 @@ export class UserController {
     return await this.userService.findAll();
   }
 
-  @Put(':id')
-  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
+  @Put()
+  async update(@ExtractId() id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
     return await this.userService.update(id, updateUserDto);
   }
 }
