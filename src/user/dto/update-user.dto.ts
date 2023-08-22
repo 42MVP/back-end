@@ -3,11 +3,9 @@ import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class UpdateUserDto {
   @IsString()
   @IsNotEmpty()
-  userName: string;
+  name: string;
 
   @IsBoolean()
   @IsOptional()
   isAuth: boolean;
-
-  avatar: string;
 }
