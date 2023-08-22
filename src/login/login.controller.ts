@@ -53,7 +53,7 @@ export class LoginController {
       res
         .cookie('access-token', jwtToken.accessToken)
         .cookie('refresh-token', jwtToken.refreshToken)
-        .redirect('http://localhost:5173/siginup/setprofile');
+        .redirect('http://localhost:5173/signup/setprofile');
     }
   }
 
