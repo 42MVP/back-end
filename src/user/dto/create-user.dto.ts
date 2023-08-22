@@ -17,7 +17,7 @@ export class CreateUserDto {
   @IsOptional()
   isAuth: boolean;
 
-  avatar: Buffer;
+  avatar: string;
 
   @IsString()
   @IsOptional()

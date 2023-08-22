@@ -16,6 +16,8 @@ import { ConnectionModule } from './connection/connection.module';
 import { RepositoryModule } from './repository/repository.module';
 import { GameModule } from './game/game.module';
 import { TempModule } from './temp/temp.module';
+import { S3Service } from './s3/s3.service';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -37,8 +39,9 @@ import { TempModule } from './temp/temp.module';
     RepositoryModule,
     GameModule,
     TempModule,
+    S3Module,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, S3Service],
 })
 export class AppModule {}

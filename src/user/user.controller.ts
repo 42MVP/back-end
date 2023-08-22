@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Put, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Body, Put, Param, UseGuards, Query, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from '../common/entities/user.entity';
@@ -10,6 +10,9 @@ import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 import { OtherUserResponseDto } from './dto/other-user-response.dto';
 import { FriendService } from 'src/friend/friend.service';
 import { BlockService } from 'src/block/block.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { avatarValidatPipe } from 'src/common/pipes/avatar-validate.pipe';
+import { S3Service } from 'src/s3/s3.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -18,6 +21,7 @@ export class UserController {
     private readonly userService: UserService,
     private readonly friendshipService: FriendService,
     private readonly blockService: BlockService,
+    private readonly s3Service: S3Service,
   ) {}
 
   @Get('search')
@@ -55,7 +59,13 @@ export class UserController {
   }
 
   @Put()
-  async update(@ExtractId() id: number, @Body() updateUserDto: UpdateUserDto): Promise<void> {
-    return await this.userService.update(id, updateUserDto);
+  @UseInterceptors(FileInterceptor('avatar'))
+  async update(
+    @ExtractId() id: number,
+    @UploadedFile(avatarValidatPipe) avatar: Express.MulterS3.File,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<void> {
+    const url = await this.s3Service.avatarUpload(avatar);
+    return await this.userService.update(id, updateUserDto, url);
   }
 }

@@ -8,14 +8,21 @@ import { UserAchievementModule } from '../user-achievement/user-achievement.modu
 import { FriendModule } from 'src/friend/friend.module';
 import { BlockModule } from 'src/block/block.module';
 import { Achievement } from 'src/common/entities/achievement.entity';
+import { S3Module } from 'src/s3/s3.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Achievement]),
+    // MulterModule.registerAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: multerOptionsFactory,
+    //   inject: [ConfigService],
+    // }),
     GameHistoryModule,
     UserAchievementModule,
     forwardRef(() => FriendModule),
     forwardRef(() => BlockModule),
+    S3Module,
   ],
   controllers: [UserController],
   providers: [UserService],

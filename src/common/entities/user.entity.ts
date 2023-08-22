@@ -19,7 +19,7 @@ export class User extends BaseEntity {
   @Column({ type: 'boolean', default: false })
   isAuth: boolean;
 
-  @Column({ type: 'bytea', nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   avatar: string;
 
   @Column({ type: 'varchar', nullable: true })
