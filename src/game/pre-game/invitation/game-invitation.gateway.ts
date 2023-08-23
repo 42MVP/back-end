@@ -68,7 +68,7 @@ export class GameInvitationGateway {
     if (inviterSocket) this.server.to(inviteeSocket).emit('init', new EmitInit(newGame));
     if (inviteeSocket) this.server.to(inviterSocket).emit('init', new EmitInit(newGame));
 
-    newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+    if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-invite')

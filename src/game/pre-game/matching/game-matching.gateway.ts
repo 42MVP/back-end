@@ -90,7 +90,7 @@ export class GameMatchingGateway {
     if (user2Socket !== undefined) this.server.to(user2Socket).emit('init', new EmitInit(newGame));
 
     // gameLoop()
-    newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+    if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-matching')
