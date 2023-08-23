@@ -10,6 +10,7 @@ import { UserState, UserStateRepository } from 'src/repository/user-state.reposi
 import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
 import { GameGateway } from 'src/game/game.gateway';
+import { delay } from 'rxjs';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -83,14 +84,22 @@ export class GameMatchingGateway {
     this.gameConnectGateway.updateInGameStatus(matching.user1Id, matching.user2Id, confirmData);
 
     // enter to the gameRoom;
-    if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
+    if (newGame) {
+      this.gameConnectGateway.enterGameRoom(newGame);
+      const sleep = async () => {
+        await delay(3000);
+      };
+      this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitConfirm(newGame));
+      newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+    }
+    // if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
 
-    // send init
-    if (user1Socket !== undefined) this.server.to(user1Socket).emit('init', new EmitInit(newGame));
-    if (user2Socket !== undefined) this.server.to(user2Socket).emit('init', new EmitInit(newGame));
+    // // send init
+    // if (user1Socket !== undefined) this.server.to(user1Socket).emit('init', new EmitInit(newGame));
+    // if (user2Socket !== undefined) this.server.to(user2Socket).emit('init', new EmitInit(newGame));
 
-    // gameLoop()
-    if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+    // // gameLoop()
+    // if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-matching')
