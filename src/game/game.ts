@@ -8,6 +8,7 @@ export const defaultSetting: GameSetting = {
   paddleHeight: 100,
   paddleSpeed: 50,
   ballRad: 12.5,
+  ballSpeed: 1,
 };
 
 const defaultBackground = {
@@ -16,11 +17,15 @@ const defaultBackground = {
 };
 
 export class Game {
+  gameLoopId: number;
+  isGameEnd: boolean;
   gameInfo: GameInfo;
   scoreInfo: ScoreInfo;
   renderInfo: RenderInfo;
 
   constructor(user1: GameUser, user2: GameUser) {
+    this.gameLoopId = 0;
+    this.isGameEnd = false;
     this.gameInfo = {
       roomId: 0,
       leftUser: user1,
@@ -28,11 +33,7 @@ export class Game {
       backgroundColor: defaultBackground.gameModeOne,
     };
     this.scoreInfo = new ScoreInfo();
-    this.renderInfo = {
-      leftPaddle: new Paddle(0, defaultSetting.gameHeight / 2),
-      rightPaddle: new Paddle(defaultSetting.gameHeight - defaultSetting.paddleWidth, defaultSetting.gameHeight / 2),
-      ball: new Ball(),
-    };
+    this.renderInfo = new RenderInfo();
   }
 }
 
@@ -65,10 +66,16 @@ export class ScoreInfo {
   }
 }
 
-export interface RenderInfo {
+export class RenderInfo {
   leftPaddle: Paddle;
   rightPaddle: Paddle;
   ball: Ball;
+
+  constructor() {
+    this.leftPaddle = new Paddle(true);
+    this.rightPaddle = new Paddle(false);
+    this.ball = new Ball();
+  }
 }
 
 export class Paddle {
@@ -77,11 +84,15 @@ export class Paddle {
   x: number;
   y: number;
 
-  constructor(x: number, y: number) {
+  constructor(isLeft: boolean) {
     this.width = defaultSetting.paddleWidth;
     this.height = defaultSetting.paddleHeight;
-    this.x = x;
-    this.y = y;
+    if (isLeft) {
+      this.x = 0;
+    } else {
+      this.x = defaultSetting.gameHeight - defaultSetting.paddleWidth;
+    }
+    this.y = defaultSetting.gameHeight / 2;
   }
 }
 
@@ -92,8 +103,8 @@ export class Ball {
   dy: number;
 
   constructor() {
-    this.dx = (Math.random() * 10) % 2 ? 1 : -1;
-    this.dy = (Math.random() * 10) % 2 ? 1 : -1;
+    this.dx = Math.round(Math.random()) ? 1 : -1;
+    this.dy = Math.round(Math.random()) ? 1 : -1;
     this.x = defaultSetting.gameWidth / 2;
     this.y = defaultSetting.gameHeight / 2;
   }
@@ -107,13 +118,28 @@ export interface GameSetting {
   paddleHeight: number;
   paddleSpeed: number;
   ballRad: number;
+  ballSpeed: number;
 }
 
-export interface GameResult {
+export class GameResult {
   winId: number;
   defeatId: number;
   winScore: number;
   defeatScore: number;
+
+  constructor(game: Game) {
+    if (game.scoreInfo.leftScore === defaultSetting.matchPoint) {
+      this.winId = game.gameInfo.leftUser.userId;
+      this.winScore = game.scoreInfo.leftScore;
+      this.defeatId = game.gameInfo.rightUser.userId;
+      this.defeatScore = game.scoreInfo.rightScore;
+    } else {
+      this.winId = game.gameInfo.rightUser.userId;
+      this.winScore = game.scoreInfo.rightScore;
+      this.defeatId = game.gameInfo.leftUser.userId;
+      this.defeatScore = game.scoreInfo.leftScore;
+    }
+  }
 }
 
 export interface EmitMatched {
