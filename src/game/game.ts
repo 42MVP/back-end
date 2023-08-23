@@ -48,11 +48,27 @@ export class GameUser {
   userId: number;
   userName: string;
   userSocket: string;
+  avatarUrl: string;
+  rating: number;
 
   constructor(user: User, socketId: string) {
     this.userId = user.id;
     this.userName = user.userName;
     this.userSocket = socketId;
+    this.avatarUrl = user.avatar;
+    this.rating = user.rating;
+  }
+}
+
+export class GameUserData {
+  name: string;
+  avatarURL: string;
+  rating: number;
+
+  constructor(gameUser: GameUser) {
+    this.name = gameUser.userName;
+    this.avatarURL = gameUser.avatarUrl;
+    this.rating = this.rating;
   }
 }
 
@@ -149,16 +165,16 @@ export interface EmitMatched {
 
 export class EmitConfirm {
   result: boolean;
-  leftUser: GameUser | undefined;
-  rightUser: GameUser | undefined;
-  gameRoomId: number | undefined;
+  leftUser: GameUserData | undefined;
+  rightUser: GameUserData | undefined;
+  gameRoomId: string | undefined;
 
   constructor(game: Game | null) {
     if (game) {
       this.result = true;
-      this.leftUser = game.gameInfo.leftUser;
-      this.rightUser = game.gameInfo.rightUser;
-      this.gameRoomId = game.gameInfo.roomId;
+      this.leftUser = new GameUserData(game.gameInfo.leftUser);
+      this.rightUser = new GameUserData(game.gameInfo.rightUser);
+      this.gameRoomId = game.gameInfo.roomId.toString();
     } else {
       this.result = false;
       this.leftUser = undefined;
@@ -194,16 +210,16 @@ export interface EmitInvite {
 
 export class EmitInviteConfirm {
   result: boolean;
-  leftUser: GameUser | undefined;
-  rightUser: GameUser | undefined;
-  gameRoomId: number | undefined;
+  leftUser: GameUserData | undefined;
+  rightUser: GameUserData | undefined;
+  gameRoomId: string | undefined;
 
   constructor(game: Game | null) {
     if (game) {
       this.result = true;
-      this.leftUser = game.gameInfo.leftUser;
-      this.rightUser = game.gameInfo.rightUser;
-      this.gameRoomId = game.gameInfo.roomId;
+      this.leftUser = new GameUserData(game.gameInfo.leftUser);
+      this.rightUser = new GameUserData(game.gameInfo.rightUser);
+      this.gameRoomId = game.gameInfo.roomId.toString();
     } else {
       this.result = false;
       this.leftUser = undefined;
