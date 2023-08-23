@@ -4,19 +4,21 @@ import { S3 } from 'aws-sdk';
 
 @Injectable()
 export class S3Service {
-  constructor(private readonly configService: ConfigService) {}
+  private readonly s3: S3;
 
-  async avatarUpload(file: Express.MulterS3.File): Promise<string> {
-    const s3 = new S3({
+  constructor(private readonly configService: ConfigService) {
+    this.s3 = new S3({
       region: this.configService.get('AWS_S3_REGION'),
       accessKeyId: this.configService.get('AWS_S3_ACCESS_KEY'),
       secretAccessKey: this.configService.get('AWS_S3_SECRET_KEY'),
     });
+  }
 
-    const uploadResult = await s3
+  async avatarUpload(file: Express.MulterS3.File, userName: string): Promise<string> {
+    const uploadResult = await this.s3
       .upload({
         Bucket: this.configService.get('AWS_S3_BUCKET'),
-        Key: `${this.configService.get('AWS_S3_AVATAR_FOLDER')}${Date.now()}_${file.originalname}`,
+        Key: `${this.configService.get('AWS_S3_AVATAR_FOLDER')}${userName}_avatar`,
         ContentType: file.mimetype,
         Body: file.buffer,
       })
