@@ -7,8 +7,9 @@ import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-import { EmitConfirm, EmitMatched, Game } from 'src/game/game';
+import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
+import { GameGateway } from 'src/game/game.gateway';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -26,6 +27,7 @@ export class GameMatchingGateway {
     private readonly queueRepository: QueueRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
+    private readonly gameGateway: GameGateway,
   ) {}
 
   @WebSocketServer()
@@ -82,6 +84,13 @@ export class GameMatchingGateway {
 
     // enter to the gameRoom;
     if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
+
+    // send init
+    if (user1Socket !== undefined) this.server.to(user1Socket).emit('init', new EmitInit(newGame));
+    if (user2Socket !== undefined) this.server.to(user2Socket).emit('init', new EmitInit(newGame));
+
+    // gameLoop()
+    newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-matching')

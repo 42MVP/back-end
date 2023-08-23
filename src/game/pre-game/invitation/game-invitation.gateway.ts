@@ -6,7 +6,8 @@ import { Invitation, InvitationRepository } from 'src/repository/invitation.repo
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameConnectGateway } from '../game-connect.gateway';
-import { EmitInvite, EmitInviteConfirm, EmitInviteError, Game } from 'src/game/game';
+import { EmitInit, EmitInvite, EmitInviteConfirm, EmitInviteError, Game } from 'src/game/game';
+import { GameGateway } from 'src/game/game.gateway';
 
 const GameInviteEvent = {
   invite: 'invite',
@@ -23,6 +24,7 @@ export class GameInvitationGateway {
     private readonly userSocketRepository: UserSocketRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
+    private readonly gameGateway: GameGateway,
   ) {}
 
   @WebSocketServer()
@@ -62,6 +64,11 @@ export class GameInvitationGateway {
 
     // enter to the GameRoom
     if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
+
+    if (inviterSocket) this.server.to(inviteeSocket).emit('init', new EmitInit(newGame));
+    if (inviteeSocket) this.server.to(inviterSocket).emit('init', new EmitInit(newGame));
+
+    newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-invite')
