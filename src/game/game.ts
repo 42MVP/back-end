@@ -68,7 +68,7 @@ export class GameUserData {
   constructor(gameUser: GameUser) {
     this.name = gameUser.userName;
     this.avatarURL = gameUser.avatarUrl;
-    this.rating = this.rating;
+    this.rating = gameUser.rating;
   }
 }
 
