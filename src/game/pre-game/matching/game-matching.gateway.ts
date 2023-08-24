@@ -11,6 +11,7 @@ import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
 import { GameGateway } from 'src/game/game.gateway';
 import { delay } from 'rxjs';
+import { SchedulerRegistry } from '@nestjs/schedule';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -29,6 +30,7 @@ export class GameMatchingGateway {
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
     private readonly gameGateway: GameGateway,
+    private schedulerRegistry: SchedulerRegistry,
   ) {}
 
   @WebSocketServer()
@@ -86,11 +88,8 @@ export class GameMatchingGateway {
     // enter to the gameRoom;
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
-      const sleep = async () => {
-        await delay(3000);
-      };
       this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitConfirm(newGame));
-      newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+      newGame.gameLoopId = this.schedulerRegistry.getInterval('gameLoop');
     }
     // if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
 

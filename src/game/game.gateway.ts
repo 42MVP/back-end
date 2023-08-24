@@ -3,16 +3,23 @@ import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
 import { Ball, EmitInit, Game, GameResult, GameSetting, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
+import { Interval, SchedulerRegistry } from '@nestjs/schedule';
+import { clearInterval } from 'timers';
 
 @WebSocketGateway()
 export class GameGateway {
-  constructor(private readonly gameService: GameService, private readonly gameRepository: GameRepository) {}
+  constructor(
+    private readonly gameService: GameService,
+    private readonly gameRepository: GameRepository,
+    private schedulerRegistry: SchedulerRegistry,
+  ) {}
 
   @WebSocketServer()
   server: Server;
 
   setting: GameSetting = defaultSetting;
 
+  @Interval('gameLoop', 10)
   repeatGameLoop(game: Game) {
     this.moveBall(game);
     this.changeBallVector(game);
@@ -21,7 +28,8 @@ export class GameGateway {
       this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
     if (game.isGameEnd) {
-      clearInterval(game.gameLoopId); // out of gameLoop -> Exit
+      // out of gameLoop -> Exit
+      clearInterval(game.gameLoopId);
       this.gameService.updateGameHistory(new GameResult(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', game.gameInfo);
     } else {
