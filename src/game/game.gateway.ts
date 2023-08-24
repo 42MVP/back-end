@@ -26,7 +26,7 @@ export class GameGateway {
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
       game.renderInfo = new RenderInfo();
-      this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
+      if (!game.isGameEnd) this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
     if (game.isGameEnd) {
       clearInterval(game.gameLoopId); // out of gameLoop -> Exit
