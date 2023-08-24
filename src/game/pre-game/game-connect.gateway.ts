@@ -48,8 +48,8 @@ export class GameConnectGateway {
 
   enterGameRoom(newGame: Game) {
     const newGameRoomName: string = newGame.gameInfo.roomId.toString();
-    this.server.in(newGameRoomName).socketsJoin(newGame.gameInfo.leftUser.userSocket);
-    this.server.in(newGameRoomName).socketsJoin(newGame.gameInfo.rightUser.userSocket);
+    this.server.in(newGame.gameInfo.leftUser.userSocket).socketsJoin(newGameRoomName);
+    this.server.in(newGame.gameInfo.rightUser.userSocket).socketsJoin(newGameRoomName);
     this.server.to(newGameRoomName).emit('enter-game');
     return newGame;
   }

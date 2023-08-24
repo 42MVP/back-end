@@ -7,11 +7,9 @@ import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
+import { EmitConfirm, EmitInit, EmitMatched, Game, GameResult, RenderInfo } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
 import { GameGateway } from 'src/game/game.gateway';
-import { delay } from 'rxjs';
-import { SchedulerRegistry } from '@nestjs/schedule';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -30,7 +28,6 @@ export class GameMatchingGateway {
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
     private readonly gameGateway: GameGateway,
-    private schedulerRegistry: SchedulerRegistry,
   ) {}
 
   @WebSocketServer()
@@ -88,17 +85,11 @@ export class GameMatchingGateway {
     // enter to the gameRoom;
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
-      this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitConfirm(newGame));
-      newGame.gameLoopId = this.schedulerRegistry.getInterval('gameLoop');
+      setTimeout(() => {
+        this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
+        this.gameGateway.startGameLoop(newGame);
+      }, 2000);
     }
-    // if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
-
-    // // send init
-    // if (user1Socket !== undefined) this.server.to(user1Socket).emit('init', new EmitInit(newGame));
-    // if (user2Socket !== undefined) this.server.to(user2Socket).emit('init', new EmitInit(newGame));
-
-    // // gameLoop()
-    // if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
   }
 
   @SubscribeMessage('reject-matching')

@@ -62,13 +62,13 @@ export class GameInvitationGateway {
     // changeState()
     this.gameConnectGateway.updateInGameStatus(invitation.inviteeId, invitation.inviterId, inviteConfirm);
 
-    // enter to the GameRoom
-    if (newGame) this.gameConnectGateway.enterGameRoom(newGame);
-
-    if (inviterSocket) this.server.to(inviteeSocket).emit('init', new EmitInit(newGame));
-    if (inviteeSocket) this.server.to(inviterSocket).emit('init', new EmitInit(newGame));
-
-    if (newGame) newGame.gameLoopId = setInterval(newGame => this.gameGateway.repeatGameLoop(newGame), 10);
+    if (newGame) {
+      this.gameConnectGateway.enterGameRoom(newGame);
+      setTimeout(() => {
+        this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
+        this.gameGateway.startGameLoop(newGame);
+      }, 2000);
+    }
   }
 
   @SubscribeMessage('reject-invite')

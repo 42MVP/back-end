@@ -17,14 +17,13 @@ const defaultBackground = {
 };
 
 export class Game {
-  gameLoopId: number;
+  gameLoopId: ReturnType<typeof setInterval>;
   isGameEnd: boolean;
   gameInfo: GameInfo;
   scoreInfo: ScoreInfo;
   renderInfo: RenderInfo;
 
   constructor(user1: GameUser, user2: GameUser) {
-    this.gameLoopId = 0;
     this.isGameEnd = false;
     this.gameInfo = {
       roomId: 0,
@@ -106,9 +105,9 @@ export class Paddle {
     if (isLeft) {
       this.x = 0;
     } else {
-      this.x = defaultSetting.gameHeight - defaultSetting.paddleWidth;
+      this.x = defaultSetting.gameWidth - defaultSetting.paddleWidth;
     }
-    this.y = defaultSetting.gameHeight / 2;
+    this.y = (defaultSetting.gameHeight- defaultSetting.paddleHeight) / 2;
   }
 }
 
