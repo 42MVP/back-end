@@ -1,7 +1,7 @@
 import { ConnectedSocket, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { Ball, EmitInit, Game, GameResult, GameSetting, Paddle, RenderInfo, defaultSetting } from './game';
+import { Ball, EmitFinish, EmitInit, Game, GameSetting, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
 
@@ -18,7 +18,7 @@ export class GameGateway {
     game.gameLoopId = setInterval(this.repeatGameLoop.bind(this), 10, game);
   }
 
-  repeatGameLoop(game: Game) {
+  async repeatGameLoop(game: Game) {
     this.moveBall(game);
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
@@ -27,8 +27,11 @@ export class GameGateway {
     }
     if (game.isGameEnd) {
       clearInterval(game.gameLoopId); // out of gameLoop -> Exit
-      this.gameService.updateGameHistory(new GameResult(game));
-      this.server.to(game.gameInfo.roomId.toString()).emit('finish', game.gameInfo);
+      const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
+      this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
+      this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
+      this.server.to(game.gameInfo.rightUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
+      this.gameRepository.delete(game.gameInfo.roomId);
     } else {
       this.server.to(game.gameInfo.roomId.toString()).emit('render', game.renderInfo);
     }
@@ -80,10 +83,18 @@ export class GameGateway {
   updateGameUserScore(game: Game, isLeftScored: boolean) {
     if (isLeftScored) {
       game.scoreInfo.leftScore++;
-      if (game.scoreInfo.leftScore === this.setting.matchPoint) game.isGameEnd = true;
+      if (game.scoreInfo.leftScore === this.setting.matchPoint) {
+        game.isGameEnd = true;
+        game.resultInfo.win = game.gameInfo.leftUser;
+        game.resultInfo.defeat = game.gameInfo.rightUser;
+      }
     } else {
       game.scoreInfo.rightScore++;
-      if (game.scoreInfo.rightScore === this.setting.matchPoint) game.isGameEnd = true;
+      if (game.scoreInfo.rightScore === this.setting.matchPoint) {
+        game.isGameEnd = true;
+        game.resultInfo.win = game.gameInfo.rightUser;
+        game.resultInfo.defeat = game.gameInfo.leftUser;
+      }
     }
   }
 

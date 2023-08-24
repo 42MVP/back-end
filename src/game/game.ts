@@ -22,6 +22,7 @@ export class Game {
   gameInfo: GameInfo;
   scoreInfo: ScoreInfo;
   renderInfo: RenderInfo;
+  resultInfo: ResultInfo;
 
   constructor(user1: GameUser, user2: GameUser) {
     this.isGameEnd = false;
@@ -34,6 +35,11 @@ export class Game {
     this.scoreInfo = new ScoreInfo();
     this.renderInfo = new RenderInfo();
   }
+}
+
+export interface ResultInfo {
+  win: GameUser | null;
+  defeat: GameUser | null;
 }
 
 export interface GameInfo {
@@ -136,27 +142,6 @@ export interface GameSetting {
   ballSpeed: number;
 }
 
-export class GameResult {
-  winId: number;
-  defeatId: number;
-  winScore: number;
-  defeatScore: number;
-
-  constructor(game: Game) {
-    if (game.scoreInfo.leftScore === defaultSetting.matchPoint) {
-      this.winId = game.gameInfo.leftUser.userId;
-      this.winScore = game.scoreInfo.leftScore;
-      this.defeatId = game.gameInfo.rightUser.userId;
-      this.defeatScore = game.scoreInfo.rightScore;
-    } else {
-      this.winId = game.gameInfo.rightUser.userId;
-      this.winScore = game.scoreInfo.rightScore;
-      this.defeatId = game.gameInfo.leftUser.userId;
-      this.defeatScore = game.scoreInfo.leftScore;
-    }
-  }
-}
-
 export interface EmitMatched {
   matchingId: number;
   endTimeMs: number;
@@ -225,5 +210,13 @@ export class EmitInviteConfirm {
       this.rightUser = undefined;
       this.gameRoomId = undefined;
     }
+  }
+}
+
+export class EmitFinish {
+  gameHistoryId: number;
+
+  constructor(gameHistoryId: number) {
+    this.gameHistoryId = gameHistoryId;
   }
 }
