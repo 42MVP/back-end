@@ -7,10 +7,7 @@ import { clearInterval } from 'timers';
 
 @WebSocketGateway()
 export class GameGateway {
-  constructor(
-    private readonly gameService: GameService,
-    private readonly gameRepository: GameRepository,
-  ) {}
+  constructor(private readonly gameService: GameService, private readonly gameRepository: GameRepository) {}
 
   @WebSocketServer()
   server: Server;

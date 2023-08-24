@@ -107,7 +107,7 @@ export class Paddle {
     } else {
       this.x = defaultSetting.gameWidth - defaultSetting.paddleWidth;
     }
-    this.y = (defaultSetting.gameHeight- defaultSetting.paddleHeight) / 2;
+    this.y = (defaultSetting.gameHeight - defaultSetting.paddleHeight) / 2;
   }
 }
 
