@@ -29,6 +29,7 @@ interface EmitConfirm {
 
 interface EmitMatched {
   matchingId: number;
+  endTimeMs: number;
 }
 
 @WebSocketGateway()
@@ -45,12 +46,13 @@ export class GameMatchingGateway {
   @WebSocketServer()
   server: Server;
 
-  sendMatching(userId: number, matchingId: number): void {
+  sendMatching(userId: number, matchingId: { matchingId: number; endTimeMs: number }): void {
     const userSocket: string | undefined = this.userSocketRepository.find(userId);
 
     if (!userSocket) return;
     const data: EmitMatched = {
-      matchingId: matchingId,
+      matchingId: matchingId.matchingId,
+      endTimeMs: matchingId.endTimeMs,
     };
     this.server.to(userSocket).emit(GameMatchingEvent.matched, data);
   }
@@ -63,10 +65,20 @@ export class GameMatchingGateway {
     if (user2Socket !== undefined) this.server.to(user2Socket).emit(GameMatchingEvent.timeout);
   }
 
+  isUserInMatching(connectedSocketId: string, user1Id: number, user2Id: number): boolean {
+    const user1Socket = this.userSocketRepository.find(user1Id);
+    const user2Socket = this.userSocketRepository.find(user2Id);
+    if (user1Socket === connectedSocketId || user2Socket === connectedSocketId) return true;
+    return false;
+  }
+
   @SubscribeMessage('accept-matching')
-  async acceptMatching(@MessageBody() acceptMatchingDto: { matchingId: number }) {
+  async acceptMatching(@ConnectedSocket() connected: Socket, @MessageBody() acceptMatchingDto: { matchingId: number }) {
     const matching = this.matchingRepository.find(acceptMatchingDto.matchingId);
     if (matching === undefined) return;
+
+    if (this.isUserInMatching(connected.id, matching.user1Id, matching.user2Id) === false) return;
+
     if (matching.accept === false) {
       matching.accept = true;
       this.matchingRepository.update(acceptMatchingDto.matchingId, matching);
@@ -127,33 +139,16 @@ export class GameMatchingGateway {
   async rejectMatching(@ConnectedSocket() connected: Socket, @MessageBody() rejectMatchingDto: { matchingId: number }) {
     const matching = this.matchingRepository.find(rejectMatchingDto.matchingId);
     if (matching === undefined) return;
+    if (this.isUserInMatching(connected.id, matching.user1Id, matching.user2Id) === false) return;
+
     this.matchingRepository.delete(rejectMatchingDto.matchingId);
 
     let accepterSocket: string = undefined;
-    let accepterId: number = undefined;
-    let changeState: () => void = undefined;
     const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
     const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
 
-    if (user1Socket === connected.id) {
-      accepterSocket = user2Socket;
-      accepterId = matching.user2Id;
-      changeState = () => {
-        this.userStateRepository.update(matching.user2Id, UserState.IN_QUEUE);
-        this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-      };
-    } else if (user2Socket === connected.id) {
-      accepterSocket = user1Socket;
-      accepterId = matching.user1Id;
-      changeState = () => {
-        this.userStateRepository.update(matching.user1Id, UserState.IN_QUEUE);
-        this.userStateRepository.update(matching.user2Id, UserState.IDLE);
-      };
-    } else {
-      this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-      this.userStateRepository.update(matching.user2Id, UserState.IDLE);
-      return;
-    }
+    if (user1Socket === connected.id) accepterSocket = user2Socket;
+    else accepterSocket = user1Socket;
 
     const data: EmitConfirm = {
       result: false,
@@ -162,8 +157,7 @@ export class GameMatchingGateway {
       gameRoomId: undefined,
     };
     this.server.to(accepterSocket).emit(GameMatchingEvent.confirm, data);
-    const user: User = await this.userRepository.findOne({ where: { id: accepterId } });
-    if (user !== null) this.queueRepository.save([user.id, user.rating]);
-    changeState();
+    this.userStateRepository.update(matching.user1Id, UserState.IDLE);
+    this.userStateRepository.update(matching.user2Id, UserState.IDLE);
   }
 }
