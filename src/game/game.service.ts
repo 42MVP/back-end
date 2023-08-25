@@ -11,6 +11,7 @@ export class GameService {
   constructor(
     @InjectRepository(GameHistory)
     private readonly gameHistoryRepository: Repository<GameHistory>,
+    @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
 

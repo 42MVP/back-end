@@ -6,9 +6,10 @@ import { GameGateway } from './game.gateway';
 import { GameService } from './game.service';
 import { RepositoryModule } from 'src/repository/repository.module';
 import { GameController } from './game.controller';
+import { User } from 'src/common/entities/user.entity';
 
 @Module({
-  imports: [PreGameModule, TypeOrmModule.forFeature([GameHistory]), RepositoryModule],
+  imports: [PreGameModule, TypeOrmModule.forFeature([GameHistory, User]), RepositoryModule],
   providers: [GameGateway, GameService],
   controllers: [GameController],
 })
