@@ -25,7 +25,6 @@ export class GameInvitationService {
     const invitationId = this.invitationRepository.save({
       inviterId: ids.inviter,
       inviteeId: ids.invitee,
-      time: new Date(),
     });
     const isSuccess = this.gameInvitationGateway.sendInvite(
       {
