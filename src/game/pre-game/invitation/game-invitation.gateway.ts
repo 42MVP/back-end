@@ -12,6 +12,7 @@ const GameInviteEvent = {
   inviteSuccess: 'invite-success',
   inviteConfirm: 'invite-confirm',
   inviteTimeout: 'invite-timeout',
+  inviteCancel: 'invite-cancel',
   inviteError: 'invite-error',
 };
 
@@ -97,6 +98,12 @@ export class GameInvitationGateway {
       msg: msg,
     };
     this.server.to(someone).emit(GameInviteEvent.inviteError, data);
+  }
+
+  sendInviteCancel(userId: number) {
+    const userSocket = this.userSocketRepository.find(userId);
+
+    if (userSocket) this.server.to(userSocket).emit(GameInviteEvent.inviteCancel);
   }
 
   @SubscribeMessage('accept-invite')
