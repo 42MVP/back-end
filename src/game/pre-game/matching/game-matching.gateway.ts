@@ -31,10 +31,32 @@ interface EmitMatched {
   endTimeMs: number;
 }
 
-interface MatchingUsersSocket {
-  areAvailable: boolean;
-  user1Socket: string | undefined;
-  user2Socket: string | undefined;
+class MatchingUsersSocket {
+  private user1Socket: string | undefined;
+  private user2Socket: string | undefined;
+
+  constructor(user1Socket: string, user2Socket: string) {
+    this.user1Socket = user1Socket;
+    this.user2Socket = user2Socket;
+  }
+
+  get user1(): string | undefined {
+    return this.user1Socket;
+  }
+
+  get user2(): string | undefined {
+    return this.user2Socket;
+  }
+
+  areAvailable(): boolean {
+    if (this.user1Socket !== undefined && this.user2Socket !== undefined) return true;
+    return false;
+  }
+
+  checkSocketPermission(connectedSocketId: string): boolean {
+    if (this.user1Socket === connectedSocketId || this.user2Socket === connectedSocketId) return true;
+    return false;
+  }
 }
 
 @WebSocketGateway()
@@ -82,24 +104,8 @@ export class GameMatchingGateway {
   getMatchingUsersSocket(matching: Matching): MatchingUsersSocket {
     const user1Socket = this.userSocketRepository.find(matching.user1Id);
     const user2Socket = this.userSocketRepository.find(matching.user2Id);
-    let areAvailable = true;
 
-    if (user1Socket === undefined || user2Socket === undefined) areAvailable = false;
-    return {
-      areAvailable: areAvailable,
-      user1Socket: user1Socket,
-      user2Socket: user2Socket,
-    };
-  }
-
-  isValidConnectedSocket(connectedSocketId: string, user1Socket: string, user2Socket: string): boolean {
-    if (user1Socket === connectedSocketId || user2Socket === connectedSocketId) return true;
-    return false;
-  }
-
-  isSocketOwner(connectedSocketId: string, userSocket: string): boolean {
-    if (connectedSocketId === userSocket) return true;
-    return false;
+    return new MatchingUsersSocket(user1Socket, user2Socket);
   }
 
   @SubscribeMessage('accept-matching')
@@ -108,11 +114,11 @@ export class GameMatchingGateway {
     if (matching === undefined) return;
 
     const sockets: MatchingUsersSocket = this.getMatchingUsersSocket(matching);
-    if (!sockets.areAvailable) return;
-    if (!this.isValidConnectedSocket(connected.id, sockets.user1Socket, sockets.user2Socket)) return;
+    if (!sockets.areAvailable()) return;
+    if (!sockets.checkSocketPermission(connected.id)) return;
 
     if (matching.accept === MatchingAcceptUser.NONE) {
-      if (this.isSocketOwner(connected.id, sockets.user1Socket)) matching.accept = MatchingAcceptUser.USER_1;
+      if (connected.id === sockets.user1) matching.accept = MatchingAcceptUser.USER_1;
       else matching.accept = MatchingAcceptUser.USER_2;
       this.matchingRepository.update(acceptMatchingDto.matchingId, matching);
       return;
@@ -161,8 +167,8 @@ export class GameMatchingGateway {
     }
 
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
-    this.server.to(sockets.user1Socket).emit(GameMatchingEvent.confirm, data);
-    this.server.to(sockets.user2Socket).emit(GameMatchingEvent.confirm, data);
+    this.server.to(sockets.user1).emit(GameMatchingEvent.confirm, data);
+    this.server.to(sockets.user2).emit(GameMatchingEvent.confirm, data);
     changeState();
   }
 
@@ -172,15 +178,15 @@ export class GameMatchingGateway {
     if (matching === undefined) return;
 
     const sockets: MatchingUsersSocket = this.getMatchingUsersSocket(matching);
-    if (!sockets.areAvailable) return;
-    if (!this.isValidConnectedSocket(connected.id, sockets.user1Socket, sockets.user2Socket)) return;
+    if (!sockets.areAvailable()) return;
+    if (!sockets.checkSocketPermission(connected.id)) return;
 
     this.matchingRepository.delete(rejectMatchingDto.matchingId);
 
     let accepterSocket: string = undefined;
 
-    if (this.isSocketOwner(connected.id, sockets.user1Socket)) accepterSocket = sockets.user2Socket;
-    else accepterSocket = sockets.user1Socket;
+    if (connected.id === sockets.user1) accepterSocket = sockets.user2;
+    else accepterSocket = sockets.user1;
 
     const data: EmitConfirm = {
       result: false,

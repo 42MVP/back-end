@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 
 const GameInviteEvent = {
   invite: 'invite',
+  inviteSuccess: 'invite-success',
   inviteConfirm: 'invite-confirm',
   inviteTimeout: 'invite-timeout',
   inviteError: 'invite-error',
@@ -37,6 +38,34 @@ interface EmitInviteConfirm {
   gameRoomId: number | undefined;
 }
 
+class InvitationUsersSocket {
+  private inviterSocket: string | undefined;
+  private inviteeSocket: string | undefined;
+
+  constructor(inviterSocket: string, inviteeSocket: string) {
+    this.inviterSocket = inviterSocket;
+    this.inviteeSocket = inviteeSocket;
+  }
+
+  get inviter(): string | undefined {
+    return this.inviterSocket;
+  }
+
+  get invitee(): string | undefined {
+    return this.inviteeSocket;
+  }
+
+  areAvailable(): boolean {
+    if (this.inviterSocket !== undefined && this.inviteeSocket !== undefined) return true;
+    return false;
+  }
+
+  checkSocketPermission(connectedSocketId: string): boolean {
+    if (this.inviterSocket === connectedSocketId || this.inviteeSocket === connectedSocketId) return true;
+    return false;
+  }
+}
+
 @WebSocketGateway()
 export class GameInvitationGateway {
   constructor(
@@ -49,6 +78,13 @@ export class GameInvitationGateway {
 
   @WebSocketServer()
   server: Server;
+
+  getInvitationUsersSocket(invitation: Invitation): InvitationUsersSocket {
+    const inviteeSocket = this.userSocketRepository.find(invitation.inviteeId);
+    const inviterSocket = this.userSocketRepository.find(invitation.inviterId);
+
+    return new InvitationUsersSocket(inviterSocket, inviteeSocket);
+  }
 
   sendInviteError(someone: string, msg: string) {
     const data: EmitInviteError = {
@@ -64,9 +100,8 @@ export class GameInvitationGateway {
       this.sendInviteError(userSocket.id, '유효하지 않는 초대입니다.');
       return;
     }
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(invitation.inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
-    if (inviteeSocket !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    if (sockets.invitee !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
 
     const inviterInfo: User = await this.userRepository.findOne({ where: { id: invitation.inviterId } });
     const inviteeInfo: User = await this.userRepository.findOne({ where: { id: invitation.inviteeId } });
@@ -110,9 +145,17 @@ export class GameInvitationGateway {
     }
 
     this.invitationRepository.delete(acceptInviteDto.invitationId);
-    if (inviterSocket) this.server.to(inviteeSocket).emit(GameInviteEvent.inviteConfirm, data);
-    if (inviteeSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteConfirm, data);
-    changeState();
+    if (sockets.inviter) {
+      this.server.to(sockets.invitee).emit(GameInviteEvent.inviteConfirm, data);
+      this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, data);
+      changeState();
+    } else {
+      this.server.to(sockets.invitee).emit(GameInviteEvent.inviteError, {
+        msg: '상대가 접속중이지 않습니다',
+      });
+      this.userStateRepository.update(invitation.inviteeId, UserState.IDLE);
+      this.userStateRepository.update(invitation.inviterId, UserState.IDLE);
+    }
   }
 
   @SubscribeMessage('reject-invite')
@@ -120,9 +163,8 @@ export class GameInvitationGateway {
     const invitation = this.invitationRepository.find(rejectInviteDto.invitationId);
     if (!invitation) return;
 
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(invitation.inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
-    if (inviteeSocket !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않은 접근입니다');
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    if (sockets.invitee !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
 
     const data: EmitInviteConfirm = {
       result: false,
@@ -130,7 +172,7 @@ export class GameInvitationGateway {
       rightUser: undefined,
       gameRoomId: undefined,
     };
-    if (inviterSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteConfirm, data);
+    if (sockets.inviter) this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, data);
 
     this.invitationRepository.delete(rejectInviteDto.invitationId);
     this.userStateRepository.update(invitation.inviteeId, UserState.IDLE);
@@ -158,6 +200,7 @@ export class GameInvitationGateway {
       invitationId: invitationId,
     };
     this.server.to(inviteeSocket).emit(GameInviteEvent.invite, inviteData);
+    this.server.to(inviterSocket).emit(GameInviteEvent.inviteSuccess);
     return true;
   }
 
