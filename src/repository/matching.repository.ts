@@ -2,10 +2,16 @@ import { Injectable } from '@nestjs/common';
 
 export const MATCHING_EXPIRED_MS = 10000;
 
+export enum MatchingAcceptUser {
+  NONE = 0,
+  USER_1 = 1,
+  USER_2 = 2,
+}
+
 export interface Matching {
   user1Id: number;
   user2Id: number;
-  accept: boolean;
+  accept: MatchingAcceptUser;
   expiredTime: number;
 }
 
@@ -32,7 +38,7 @@ export class MatchingRepository {
     this.matchingMap.set(curIndex, {
       user1Id: user1Id,
       user2Id: user2Id,
-      accept: false,
+      accept: MatchingAcceptUser.NONE,
       expiredTime: new Date().getTime() + MATCHING_EXPIRED_MS,
     });
     this.index++;

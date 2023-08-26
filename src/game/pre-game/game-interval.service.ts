@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import { Matching, MatchingRepository } from 'src/repository/matching.repository';
+import { Matching, MatchingAcceptUser, MatchingRepository } from 'src/repository/matching.repository';
 import { QueueRepository, rating, userId } from 'src/repository/queue.repository';
 import { GameInvitationGateway } from './invitation/game-invitation.gateway';
 import { GameMatchingGateway } from './matching/game-matching.gateway';
@@ -79,11 +79,20 @@ export class GameIntervalService {
 
     matchings.forEach((value: Matching, key: number) => {
       if (new Date().getTime() > value.expiredTime) {
-        this.gameMatchingGateway.sendMatchingTimeout(value.user1Id, value.user2Id);
-        this.matchingRepository.delete(key);
-        this.userStateRepository.update(value.user1Id, UserState.IDLE);
-        this.userStateRepository.update(value.user2Id, UserState.IDLE);
+        if (value.accept === MatchingAcceptUser.NONE) {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user1Id);
+          this.gameMatchingGateway.sendMatchingTimeout(value.user2Id);
+        } else if (value.accept === MatchingAcceptUser.USER_1) {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user2Id);
+          this.gameMatchingGateway.sendMatchingRejected(value.user1Id);
+        } else {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user1Id);
+          this.gameMatchingGateway.sendMatchingRejected(value.user2Id);
+        }
       }
+      this.matchingRepository.delete(key);
+      this.userStateRepository.update(value.user1Id, UserState.IDLE);
+      this.userStateRepository.update(value.user2Id, UserState.IDLE);
     });
   }
 
