@@ -23,6 +23,12 @@ interface EmitInvite {
   inviterName: string;
   inviterAvatarUrl: string;
   invitationId: number;
+  endTimeMs: number;
+}
+
+interface EmitInviteSuccess {
+  invitationId: number;
+  endTimeMs: number;
 }
 
 interface GameUser {
@@ -179,28 +185,24 @@ export class GameInvitationGateway {
     this.userStateRepository.update(invitation.inviterId, UserState.IDLE);
   }
 
-  sendInvite(
-    inviter: { id: number; avatarUrl: string; userName: string },
-    inviteeId: number,
-    invitationId: number,
-  ): boolean {
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(inviter.id);
-
-    if (!inviteeSocket) {
-      this.sendInviteError(inviterSocket, '상대방이 접속중이지 않음.');
-      return false;
-    } else if (!inviterSocket) {
-      return false;
-    }
+  sendInvite(inviter: { id: number; avatarUrl: string; userName: string }, invitationId: number): boolean {
+    const invitation: Invitation = this.invitationRepository.find(invitationId);
+    if (!invitation) return false;
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    if (!sockets.areAvailable()) return false;
 
     const inviteData: EmitInvite = {
       inviterName: inviter.userName,
       inviterAvatarUrl: inviter.avatarUrl,
       invitationId: invitationId,
+      endTimeMs: invitation.expiredTime,
     };
-    this.server.to(inviteeSocket).emit(GameInviteEvent.invite, inviteData);
-    this.server.to(inviterSocket).emit(GameInviteEvent.inviteSuccess);
+    const inviterData: EmitInviteSuccess = {
+      invitationId: invitationId,
+      endTimeMs: invitation.expiredTime,
+    };
+    this.server.to(sockets.invitee).emit(GameInviteEvent.invite, inviteData);
+    this.server.to(sockets.inviter).emit(GameInviteEvent.inviteSuccess, inviterData);
     return true;
   }
 

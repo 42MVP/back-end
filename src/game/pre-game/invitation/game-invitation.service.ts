@@ -32,7 +32,6 @@ export class GameInvitationService {
         avatarUrl: '',
         userName: inviter.userName,
       },
-      ids.invitee,
       invitationId,
     );
     if (isSuccess) {
