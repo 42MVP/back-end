@@ -89,10 +89,10 @@ export class GameIntervalService {
           this.gameMatchingGateway.sendMatchingTimeout(value.user1Id);
           this.gameMatchingGateway.sendMatchingRejected(value.user2Id);
         }
+        this.matchingRepository.delete(key);
+        this.userStateRepository.update(value.user1Id, UserState.IDLE);
+        this.userStateRepository.update(value.user2Id, UserState.IDLE);
       }
-      this.matchingRepository.delete(key);
-      this.userStateRepository.update(value.user1Id, UserState.IDLE);
-      this.userStateRepository.update(value.user2Id, UserState.IDLE);
     });
   }
 
