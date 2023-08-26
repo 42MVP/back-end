@@ -207,8 +207,15 @@ export class GameInvitationGateway {
   }
 
   sendInviteTimeout(invitation: Invitation) {
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
 
-    if (inviterSocket) this.sendInviteError(inviterSocket, '상대가 제한 시간 내 초대를 받지 않음');
+    const data: EmitInviteConfirm = {
+      result: false,
+      leftUser: undefined,
+      rightUser: undefined,
+      gameRoomId: undefined,
+    };
+    if (sockets.invitee) this.server.to(sockets.invitee).emit(GameInviteEvent.inviteTimeout);
+    if (sockets.inviter) this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, data);
   }
 }
