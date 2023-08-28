@@ -34,12 +34,18 @@ export class Game {
     };
     this.scoreInfo = new ScoreInfo();
     this.renderInfo = new RenderInfo();
+    this.resultInfo = new ResultInfo();
   }
 }
 
-export interface ResultInfo {
+export class ResultInfo {
   win: GameUser | null;
   defeat: GameUser | null;
+
+  constructor() {
+    this.win = null;
+    this.defeat = null;
+  }
 }
 
 export interface GameInfo {
