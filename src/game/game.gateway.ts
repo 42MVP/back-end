@@ -39,7 +39,7 @@ export class GameGateway {
   }
 
   async isGameReady(game: Game): Promise<boolean> {
-    while (game.connectInfo.expiredTimeMs < new Date().getTime()) {
+    while (game.connectInfo.expiredTimeMs > new Date().getTime()) {
       if (game.connectInfo.isLeftReady && game.connectInfo.isRightReady) {
         return true;
       }
