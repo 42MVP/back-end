@@ -68,7 +68,7 @@ export class UserController {
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<void> {
     const user: User = await this.userService.findOneById(id);
-    const url: string = await this.s3Service.avatarUpload(avatar, user.userName);
+    const url: string = await this.s3Service.avatarUpload(avatar, user.id);
     return await this.userService.update(id, updateUserDto, url);
   }
 }
