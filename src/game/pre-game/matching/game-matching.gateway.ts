@@ -130,7 +130,7 @@ export class GameMatchingGateway {
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
       this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
-      this.gameGateway.checkGameReady(newGame);
+      await this.gameGateway.waitForGamePlayers(newGame);
     }
   }
 
