@@ -129,10 +129,8 @@ export class GameMatchingGateway {
     // enter to the gameRoom;
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
-      setTimeout(() => {
-        this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
-        this.gameGateway.startGameLoop(newGame);
-      }, 2000);
+      this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
+      this.gameGateway.checkGameReady(newGame);
     }
   }
 

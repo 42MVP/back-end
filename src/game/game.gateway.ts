@@ -14,8 +14,57 @@ export class GameGateway {
 
   setting: GameSetting = defaultSetting;
 
+  @SubscribeMessage('ready')
+  handleReady(@ConnectedSocket() client: Socket) {
+    const targetGame: Game = this.gameRepository.findBySocket(client.id);
+    if (!targetGame) return;
+    if (client.id === targetGame.gameInfo.leftUser.userSocket) targetGame.connectInfo.isLeftReady = true;
+    else targetGame.connectInfo.isRightReady = true;
+  }
+
+  isGameReady(game: Game): boolean {
+    while (game.connectInfo.expiredTimeMs < new Date().getTime()) {
+      if (game.connectInfo.isLeftReady && game.connectInfo.isRightReady) {
+        return true;
+      } else if (!game.connectInfo.isLeftReady && !game.connectInfo.isRightReady) {
+        // 둘 다 안왔을때;
+        this.server.to(game.gameInfo.roomId.toString()).emit('game-error');
+        this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
+        this.server.to(game.gameInfo.rightUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
+        this.gameRepository.delete(game.gameInfo.roomId);
+        return false;
+      } else if (game.connectInfo.isLeftReady && !game.connectInfo.isRightReady) {
+        game.connectInfo.isGameEnd = true;
+        game.scoreInfo.leftScore = this.setting.matchPoint;
+        game.scoreInfo.rightScore = 0;
+        game.resultInfo.win = game.gameInfo.leftUser;
+        game.resultInfo.defeat = game.gameInfo.rightUser;
+      } else {
+        game.connectInfo.isGameEnd = true;
+        game.scoreInfo.rightScore = this.setting.matchPoint;
+        game.scoreInfo.leftScore = 0;
+        game.resultInfo.win = game.gameInfo.rightUser;
+        game.resultInfo.defeat = game.gameInfo.leftUser;
+      }
+      return true;
+    }
+  }
+
+  checkGameReady(game: Game) {
+    const ret = this.isGameReady(game);
+    if (ret) {
+      const START_TIME_MS = 5000;
+      setTimeout(() => {
+        this.server
+          .to(game.gameInfo.roomId.toString())
+          .emit('start', { startTimeMs: new Date().getTime() + START_TIME_MS });
+        this.startGameLoop(game);
+      }, START_TIME_MS);
+    }
+  }
+
   startGameLoop(game: Game) {
-    game.gameLoopId = setInterval(this.repeatGameLoop.bind(this), 10, game);
+    game.connectInfo.gameLoopId = setInterval(this.repeatGameLoop.bind(this), 10, game);
   }
 
   async repeatGameLoop(game: Game) {
@@ -23,10 +72,10 @@ export class GameGateway {
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
       game.renderInfo = new RenderInfo();
-      if (!game.isGameEnd) this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
+      if (!game.connectInfo.isGameEnd) this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
-    if (game.isGameEnd) {
-      clearInterval(game.gameLoopId); // out of gameLoop -> Exit
+    if (game.connectInfo.isGameEnd) {
+      clearInterval(game.connectInfo.gameLoopId); // out of gameLoop -> Exit
       const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
       this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
@@ -84,14 +133,14 @@ export class GameGateway {
     if (isLeftScored) {
       game.scoreInfo.leftScore++;
       if (game.scoreInfo.leftScore === this.setting.matchPoint) {
-        game.isGameEnd = true;
+        game.connectInfo.isGameEnd = true;
         game.resultInfo.win = game.gameInfo.leftUser;
         game.resultInfo.defeat = game.gameInfo.rightUser;
       }
     } else {
       game.scoreInfo.rightScore++;
       if (game.scoreInfo.rightScore === this.setting.matchPoint) {
-        game.isGameEnd = true;
+        game.connectInfo.isGameEnd = true;
         game.resultInfo.win = game.gameInfo.rightUser;
         game.resultInfo.defeat = game.gameInfo.leftUser;
       }

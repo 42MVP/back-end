@@ -17,15 +17,14 @@ const defaultBackground = {
 };
 
 export class Game {
-  gameLoopId: ReturnType<typeof setInterval>;
-  isGameEnd: boolean;
+  connectInfo: ConnectInfo;
   gameInfo: GameInfo;
   scoreInfo: ScoreInfo;
   renderInfo: RenderInfo;
   resultInfo: ResultInfo;
 
   constructor(user1: GameUser, user2: GameUser) {
-    this.isGameEnd = false;
+    this.connectInfo = new ConnectInfo();
     this.gameInfo = {
       roomId: 0,
       leftUser: user1,
@@ -35,6 +34,23 @@ export class Game {
     this.scoreInfo = new ScoreInfo();
     this.renderInfo = new RenderInfo();
     this.resultInfo = new ResultInfo();
+  }
+}
+
+export class ConnectInfo {
+  gameLoopId: ReturnType<typeof setInterval>;
+  isGameEnd: boolean;
+  isLeftReady: boolean;
+  isRightReady: boolean;
+  expiredTimeMs: number;
+
+  constructor() {
+    const ADD_EXPIRED_TIME_MS = 10000;
+
+    this.isGameEnd = false;
+    this.isLeftReady = false;
+    this.isRightReady = false;
+    this.expiredTimeMs = new Date().getTime() + ADD_EXPIRED_TIME_MS;
   }
 }
 
