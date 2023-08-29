@@ -15,7 +15,6 @@ import { UserAchievementModule } from './user-achievement/user-achievement.modul
 import { ConnectionModule } from './connection/connection.module';
 import { RepositoryModule } from './repository/repository.module';
 import { GameModule } from './game/game.module';
-import { TempModule } from './temp/temp.module';
 import { S3Service } from './s3/s3.service';
 import { S3Module } from './s3/s3.module';
 
@@ -38,7 +37,6 @@ import { S3Module } from './s3/s3.module';
     ChatModule,
     RepositoryModule,
     GameModule,
-    TempModule,
     S3Module,
   ],
   controllers: [AppController],

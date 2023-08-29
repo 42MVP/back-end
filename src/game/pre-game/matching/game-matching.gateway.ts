@@ -6,30 +6,15 @@ import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
+import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
+import { GameConnectGateway } from '../game-connect.gateway';
+import { GameGateway } from 'src/game/game.gateway';
 
 const GameMatchingEvent = {
   matched: 'matched',
   timeout: 'timeout',
   confirm: 'confirm',
 };
-
-interface GameUser {
-  id: number;
-  name: string;
-  avatarURL: string;
-}
-
-interface EmitConfirm {
-  result: boolean;
-  leftUser: GameUser | undefined;
-  rightUser: GameUser | undefined;
-  gameRoomId: number | undefined;
-}
-
-interface EmitMatched {
-  matchingId: number;
-  endTimeMs: number;
-}
 
 class MatchingUsersSocket {
   private user1Socket: string | undefined;
@@ -67,18 +52,20 @@ export class GameMatchingGateway {
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
     private readonly userStateRepository: UserStateRepository,
+    private readonly gameConnectGateway: GameConnectGateway,
+    private readonly gameGateway: GameGateway,
   ) {}
 
   @WebSocketServer()
   server: Server;
 
-  sendMatching(userId: number, matchingId: { matchingId: number; endTimeMs: number }): void {
+  sendMatching(userId: number, matchingData: { matchingId: number; endTimeMs: number }): void {
     const userSocket: string | undefined = this.userSocketRepository.find(userId);
 
     if (!userSocket) return;
     const data: EmitMatched = {
-      matchingId: matchingId.matchingId,
-      endTimeMs: matchingId.endTimeMs,
+      matchingId: matchingData.matchingId,
+      endTimeMs: matchingData.endTimeMs,
     };
     this.server.to(userSocket).emit(GameMatchingEvent.matched, data);
   }
@@ -125,51 +112,30 @@ export class GameMatchingGateway {
     }
 
     // 매칭 성공 메세지 보내기
-    const user1: User = await this.userRepository.findOne({ where: { id: matching.user1Id } });
-    const user2: User = await this.userRepository.findOne({ where: { id: matching.user2Id } });
 
-    let changeState: () => void = undefined;
-    let data: EmitConfirm = undefined;
-
-    if (user1 && user2) {
-      // TODO: GENERATE GAME
-      data = {
-        result: true,
-        leftUser: {
-          id: user1.id,
-          name: user1.userName,
-          // FIXME:
-          avatarURL: user1.email,
-        },
-        rightUser: {
-          id: user2.id,
-          name: user2.userName,
-          // FIXME:
-          avatarURL: user2.email,
-        },
-        gameRoomId: 1,
-      };
-      changeState = (): void => {
-        this.userStateRepository.update(matching.user1Id, UserState.IN_GAME);
-        this.userStateRepository.update(matching.user2Id, UserState.IN_GAME);
-      };
-    } else {
-      data = {
-        result: false,
-        leftUser: undefined,
-        rightUser: undefined,
-        gameRoomId: undefined,
-      };
-      changeState = (): void => {
-        this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-        this.userStateRepository.update(matching.user2Id, UserState.IDLE);
-      };
-    }
-
+    const newGame: Game | null = await this.gameConnectGateway.createNewGame(
+      matching.user1Id,
+      matching.user2Id,
+      sockets.user1,
+      sockets.user2,
+    );
+    const confirmData: EmitConfirm = new EmitConfirm(newGame); // newGame ? Game.result == true:  Game.result == false;
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
-    this.server.to(sockets.user1).emit(GameMatchingEvent.confirm, data);
-    this.server.to(sockets.user2).emit(GameMatchingEvent.confirm, data);
-    changeState();
+
+    this.server.to(sockets.user1).emit(GameMatchingEvent.confirm, confirmData);
+    this.server.to(sockets.user2).emit(GameMatchingEvent.confirm, confirmData);
+
+    // changeState();
+    this.gameConnectGateway.updateInGameStatus(matching.user1Id, matching.user2Id, confirmData);
+
+    // enter to the gameRoom;
+    if (newGame) {
+      this.gameConnectGateway.enterGameRoom(newGame);
+      setTimeout(() => {
+        this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
+        this.gameGateway.startGameLoop(newGame);
+      }, 2000);
+    }
   }
 
   @SubscribeMessage('reject-matching')
@@ -188,12 +154,7 @@ export class GameMatchingGateway {
     if (connected.id === sockets.user1) accepterSocket = sockets.user2;
     else accepterSocket = sockets.user1;
 
-    const data: EmitConfirm = {
-      result: false,
-      leftUser: undefined,
-      rightUser: undefined,
-      gameRoomId: undefined,
-    };
+    const data: EmitConfirm = new EmitConfirm(null);
     this.server.to(accepterSocket).emit(GameMatchingEvent.confirm, data);
     this.userStateRepository.update(matching.user1Id, UserState.IDLE);
     this.userStateRepository.update(matching.user2Id, UserState.IDLE);

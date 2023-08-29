@@ -1,7 +1,6 @@
-import { Body, Controller, Get, Post, Delete, UseFilters, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, UseFilters, UseGuards, Param } from '@nestjs/common';
 import { FriendService } from './friend.service';
 import { User } from '../common/entities/user.entity';
-import { FollowDto } from './dto/follow.dto';
 import { QueryFailedErrorFilter } from '../common/filters/query-failed.filter';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
@@ -19,14 +18,14 @@ export class FriendController {
     return userResponseList;
   }
 
-  @Post()
+  @Post('/:id')
   @UseFilters(new QueryFailedErrorFilter())
-  async follow(@Body() followDto: FollowDto): Promise<void> {
-    await this.friendService.addFriendList(followDto.from, followDto.to);
+  async follow(@ExtractId() me: number, @Param('id') target: number): Promise<void> {
+    await this.friendService.addFriendList(me, target);
   }
 
-  @Delete()
-  async unfolllw(@Body() followDto: FollowDto): Promise<void> {
-    await this.friendService.removeFriendList(followDto.from, followDto.to);
+  @Delete('/:id')
+  async unfolllw(@ExtractId() me: number, @Param('id') target: number): Promise<void> {
+    await this.friendService.removeFriendList(me, target);
   }
 }
