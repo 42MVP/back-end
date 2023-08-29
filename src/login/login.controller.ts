@@ -9,6 +9,7 @@ import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { UserService } from '../user/user.service';
 import { AuthCodeDto } from './dto/auth-code.dto';
 import { TwoFactorAuthGuard } from '../auth/two-factor/two-factor-auth.guard';
+import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 
 @Controller('login')
 export class LoginController {
@@ -53,13 +54,13 @@ export class LoginController {
       res
         .cookie('access-token', jwtToken.accessToken)
         .cookie('refresh-token', jwtToken.refreshToken)
-        .redirect('http://localhost:5173/signup/setprofile');
+        .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}`);
     }
   }
 
-  @Post('2fa-auth/:id')
+  @Post('2fa-auth')
   @UseGuards(TwoFactorAuthGuard)
-  async twoFactorAuth(@Param('id') id: number, @Body() authCode: AuthCodeDto, @Res() res: Response) {
+  async twoFactorAuth(@ExtractId() id: number, @Body() authCode: AuthCodeDto, @Res() res: Response) {
     await this.authService.checkCode(id.toString(), authCode.code);
     const jwtToken = await this.authService.getJwtToken(id);
     await this.userService.updateRefreshToken(id, jwtToken.refreshToken);
