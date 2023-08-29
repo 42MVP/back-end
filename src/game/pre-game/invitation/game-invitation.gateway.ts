@@ -49,7 +49,6 @@ class InvitationUsersSocket {
 @WebSocketGateway()
 export class GameInvitationGateway {
   constructor(
-    @InjectRepository(User)
     private readonly invitationRepository: InvitationRepository,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly userStateRepository: UserStateRepository,

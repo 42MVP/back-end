@@ -47,8 +47,6 @@ class MatchingUsersSocket {
 @WebSocketGateway()
 export class GameMatchingGateway {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
     private readonly userStateRepository: UserStateRepository,
