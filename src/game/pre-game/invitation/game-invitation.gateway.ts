@@ -6,20 +6,49 @@ import { Invitation, InvitationRepository } from 'src/repository/invitation.repo
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameConnectGateway } from '../game-connect.gateway';
-import { EmitInit, EmitInvite, EmitInviteConfirm, EmitInviteError, Game } from 'src/game/game';
+import { EmitInit, EmitInvite, EmitInviteConfirm, EmitInviteError, EmitInviteSuccess, Game } from 'src/game/game';
 import { GameGateway } from 'src/game/game.gateway';
 
 const GameInviteEvent = {
   invite: 'invite',
+  inviteSuccess: 'invite-success',
   inviteConfirm: 'invite-confirm',
   inviteTimeout: 'invite-timeout',
+  inviteCancel: 'invite-cancel',
   inviteError: 'invite-error',
 };
+
+class InvitationUsersSocket {
+  private inviterSocket: string | undefined;
+  private inviteeSocket: string | undefined;
+
+  constructor(inviterSocket: string, inviteeSocket: string) {
+    this.inviterSocket = inviterSocket;
+    this.inviteeSocket = inviteeSocket;
+  }
+
+  get inviter(): string | undefined {
+    return this.inviterSocket;
+  }
+
+  get invitee(): string | undefined {
+    return this.inviteeSocket;
+  }
+
+  areAvailable(): boolean {
+    if (this.inviterSocket !== undefined && this.inviteeSocket !== undefined) return true;
+    return false;
+  }
+
+  checkSocketPermission(connectedSocketId: string): boolean {
+    if (this.inviterSocket === connectedSocketId || this.inviteeSocket === connectedSocketId) return true;
+    return false;
+  }
+}
 
 @WebSocketGateway()
 export class GameInvitationGateway {
   constructor(
-    @InjectRepository(User)
     private readonly invitationRepository: InvitationRepository,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly userStateRepository: UserStateRepository,
@@ -30,11 +59,24 @@ export class GameInvitationGateway {
   @WebSocketServer()
   server: Server;
 
+  getInvitationUsersSocket(invitation: Invitation): InvitationUsersSocket {
+    const inviteeSocket = this.userSocketRepository.find(invitation.inviteeId);
+    const inviterSocket = this.userSocketRepository.find(invitation.inviterId);
+
+    return new InvitationUsersSocket(inviterSocket, inviteeSocket);
+  }
+
   sendInviteError(someone: string, msg: string) {
     const data: EmitInviteError = {
       msg: msg,
     };
     this.server.to(someone).emit(GameInviteEvent.inviteError, data);
+  }
+
+  sendInviteCancel(userId: number) {
+    const userSocket = this.userSocketRepository.find(userId);
+
+    if (userSocket) this.server.to(userSocket).emit(GameInviteEvent.inviteCancel);
   }
 
   @SubscribeMessage('accept-invite')
@@ -44,20 +86,20 @@ export class GameInvitationGateway {
       this.sendInviteError(userSocket.id, '유효하지 않는 초대입니다.');
       return;
     }
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(invitation.inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
-    if (inviteeSocket !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    // TODO: socket이 available 한지 확인하기
+    if (sockets.invitee !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
 
     const newGame: Game | null = await this.gameConnectGateway.createNewGame(
       invitation.inviteeId,
       invitation.inviterId,
-      inviteeSocket,
-      inviterSocket,
+      sockets.invitee,
+      sockets.inviter,
     );
     const inviteConfirm: EmitInviteConfirm = new EmitInviteConfirm(newGame);
     this.invitationRepository.delete(acceptInviteDto.invitationId);
-    if (inviterSocket) this.server.to(inviteeSocket).emit(GameInviteEvent.inviteConfirm, inviteConfirm);
-    if (inviteeSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteConfirm, inviteConfirm);
+    if (sockets.invitee) this.server.to(sockets.invitee).emit(GameInviteEvent.inviteConfirm, inviteConfirm);
+    if (sockets.inviter) this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, inviteConfirm);
 
     // changeState()
     this.gameConnectGateway.updateInGameStatus(invitation.inviteeId, invitation.inviterId, inviteConfirm);
@@ -76,45 +118,48 @@ export class GameInvitationGateway {
     const invitation = this.invitationRepository.find(rejectInviteDto.invitationId);
     if (!invitation) return;
 
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(invitation.inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
-    if (inviteeSocket !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않은 접근입니다');
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    if (sockets.invitee !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
 
     const data: EmitInviteConfirm = new EmitInviteConfirm(null);
-    if (inviterSocket) this.server.to(inviterSocket).emit(GameInviteEvent.inviteConfirm, data);
+    if (sockets.inviter) this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, data);
 
     this.invitationRepository.delete(rejectInviteDto.invitationId);
     this.userStateRepository.update(invitation.inviteeId, UserState.IDLE);
     this.userStateRepository.update(invitation.inviterId, UserState.IDLE);
   }
 
-  sendInvite(
-    inviter: { id: number; avatarUrl: string; userName: string },
-    inviteeId: number,
-    invitationId: number,
-  ): boolean {
-    const inviteeSocket: string | undefined = this.userSocketRepository.find(inviteeId);
-    const inviterSocket: string | undefined = this.userSocketRepository.find(inviter.id);
-
-    if (!inviteeSocket) {
-      this.sendInviteError(inviterSocket, '상대방이 접속중이지 않음.');
-      return false;
-    } else if (!inviterSocket) {
-      return false;
-    }
+  sendInvite(inviter: { id: number; avatarUrl: string; userName: string }, invitationId: number): boolean {
+    const invitation: Invitation = this.invitationRepository.find(invitationId);
+    if (!invitation) return false;
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
+    if (!sockets.areAvailable()) return false;
 
     const inviteData: EmitInvite = {
       inviterName: inviter.userName,
       inviterAvatarUrl: inviter.avatarUrl,
       invitationId: invitationId,
+      endTimeMs: invitation.expiredTime,
     };
-    this.server.to(inviteeSocket).emit(GameInviteEvent.invite, inviteData);
+    const inviterData: EmitInviteSuccess = {
+      invitationId: invitationId,
+      endTimeMs: invitation.expiredTime,
+    };
+    this.server.to(sockets.invitee).emit(GameInviteEvent.invite, inviteData);
+    this.server.to(sockets.inviter).emit(GameInviteEvent.inviteSuccess, inviterData);
     return true;
   }
 
   sendInviteTimeout(invitation: Invitation) {
-    const inviterSocket: string | undefined = this.userSocketRepository.find(invitation.inviterId);
+    const sockets: InvitationUsersSocket = this.getInvitationUsersSocket(invitation);
 
-    if (inviterSocket) this.sendInviteError(inviterSocket, '상대가 제한 시간 내 초대를 받지 않음');
+    const data: EmitInviteConfirm = {
+      result: false,
+      leftUser: undefined,
+      rightUser: undefined,
+      gameRoomId: undefined,
+    };
+    if (sockets.invitee) this.server.to(sockets.invitee).emit(GameInviteEvent.inviteTimeout);
+    if (sockets.inviter) this.server.to(sockets.inviter).emit(GameInviteEvent.inviteConfirm, data);
   }
 }

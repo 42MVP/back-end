@@ -196,6 +196,11 @@ export interface EmitInvite {
   inviterName: string;
   inviterAvatarUrl: string;
   invitationId: number;
+  endTimeMs: number;
+}
+export interface EmitInviteSuccess {
+  invitationId: number;
+  endTimeMs: number;
 }
 
 export class EmitInviteConfirm {

@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
 
+export const INVITATION_EXPIRED_MS = 10000;
+
 export interface Invitation {
   inviterId: number;
   inviteeId: number;
-  time: Date;
+  expiredTime: number;
 }
 
 @Injectable()
@@ -24,9 +26,14 @@ export class InvitationRepository {
     return this.invitationMap;
   }
 
-  save(invitation: Invitation): number {
+  save(users: { inviterId: number; inviteeId: number }): number {
     const ret = this.index;
-    this.invitationMap.set(this.index, invitation);
+    const value: Invitation = {
+      inviteeId: users.inviteeId,
+      inviterId: users.inviterId,
+      expiredTime: new Date().getTime() + INVITATION_EXPIRED_MS,
+    };
+    this.invitationMap.set(this.index, value);
     this.index++;
 
     return ret;

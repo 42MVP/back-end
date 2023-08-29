@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { Repository } from 'typeorm';
 import { GameInvitationGateway } from './game-invitation.gateway';
-import { InvitationRepository } from 'src/repository/invitation.repository';
+import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @Injectable()
@@ -25,7 +25,6 @@ export class GameInvitationService {
     const invitationId = this.invitationRepository.save({
       inviterId: ids.inviter,
       inviteeId: ids.invitee,
-      time: new Date(),
     });
     const isSuccess = this.gameInvitationGateway.sendInvite(
       {
@@ -33,7 +32,6 @@ export class GameInvitationService {
         avatarUrl: '',
         userName: inviter.userName,
       },
-      ids.invitee,
       invitationId,
     );
     if (isSuccess) {
@@ -45,5 +43,13 @@ export class GameInvitationService {
     }
 
     return invitationId;
+  }
+
+  async cancelInvite(invitationId: number, invitation: Invitation): Promise<boolean> {
+    this.gameInvitationGateway.sendInviteCancel(invitation.inviteeId);
+    this.userStateRepository.update(invitation.inviteeId, UserState.IDLE);
+    this.userStateRepository.update(invitation.inviterId, UserState.IDLE);
+
+    return this.invitationRepository.delete(invitationId);
   }
 }

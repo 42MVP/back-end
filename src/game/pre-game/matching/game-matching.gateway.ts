@@ -1,8 +1,7 @@
 import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
-import { MatchingRepository } from 'src/repository/matching.repository';
-import { QueueRepository } from 'src/repository/queue.repository';
+import { Matching, MatchingAcceptUser, MatchingRepository } from 'src/repository/matching.repository';
 import { Repository } from 'typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,14 +16,39 @@ const GameMatchingEvent = {
   confirm: 'confirm',
 };
 
+class MatchingUsersSocket {
+  private user1Socket: string | undefined;
+  private user2Socket: string | undefined;
+
+  constructor(user1Socket: string, user2Socket: string) {
+    this.user1Socket = user1Socket;
+    this.user2Socket = user2Socket;
+  }
+
+  get user1(): string | undefined {
+    return this.user1Socket;
+  }
+
+  get user2(): string | undefined {
+    return this.user2Socket;
+  }
+
+  areAvailable(): boolean {
+    if (this.user1Socket !== undefined && this.user2Socket !== undefined) return true;
+    return false;
+  }
+
+  checkSocketPermission(connectedSocketId: string): boolean {
+    if (this.user1Socket === connectedSocketId || this.user2Socket === connectedSocketId) return true;
+    return false;
+  }
+}
+
 @WebSocketGateway()
 export class GameMatchingGateway {
   constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly matchingRepository: MatchingRepository,
-    private readonly queueRepository: QueueRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
     private readonly gameGateway: GameGateway,
@@ -33,51 +57,71 @@ export class GameMatchingGateway {
   @WebSocketServer()
   server: Server;
 
-  sendMatching(userId: number, matchingId: number): void {
+  sendMatching(userId: number, matchingData: { matchingId: number; endTimeMs: number }): void {
     const userSocket: string | undefined = this.userSocketRepository.find(userId);
 
     if (!userSocket) return;
     const data: EmitMatched = {
-      matchingId: matchingId,
-      endTimeMs: new Date().getTime() + 1500,
+      matchingId: matchingData.matchingId,
+      endTimeMs: matchingData.endTimeMs,
     };
     this.server.to(userSocket).emit(GameMatchingEvent.matched, data);
   }
 
-  sendMatchingTimeout(user1: number, user2: number) {
-    const user1Socket: string | undefined = this.userSocketRepository.find(user1);
-    const user2Socket: string | undefined = this.userSocketRepository.find(user2);
+  sendMatchingTimeout(userId: number): void {
+    const userSocket: string | undefined = this.userSocketRepository.find(userId);
 
-    if (user1Socket !== undefined) this.server.to(user1Socket).emit(GameMatchingEvent.timeout);
-    if (user2Socket !== undefined) this.server.to(user2Socket).emit(GameMatchingEvent.timeout);
+    if (userSocket !== undefined) this.server.to(userSocket).emit(GameMatchingEvent.timeout);
+  }
+
+  sendMatchingRejected(userId: number): void {
+    const userSocket: string | undefined = this.userSocketRepository.find(userId);
+    const data: EmitConfirm = {
+      result: false,
+      leftUser: undefined,
+      rightUser: undefined,
+      gameRoomId: undefined,
+    };
+
+    if (userSocket) this.server.to(userSocket).emit(GameMatchingEvent.confirm, data);
+  }
+
+  getMatchingUsersSocket(matching: Matching): MatchingUsersSocket {
+    const user1Socket = this.userSocketRepository.find(matching.user1Id);
+    const user2Socket = this.userSocketRepository.find(matching.user2Id);
+
+    return new MatchingUsersSocket(user1Socket, user2Socket);
   }
 
   @SubscribeMessage('accept-matching')
-  async acceptMatching(@MessageBody() acceptMatchingDto: { matchingId: number }) {
-    const matching = this.matchingRepository.find(acceptMatchingDto.matchingId);
+  async acceptMatching(@ConnectedSocket() connected: Socket, @MessageBody() acceptMatchingDto: { matchingId: number }) {
+    const matching: Matching = this.matchingRepository.find(acceptMatchingDto.matchingId);
     if (matching === undefined) return;
-    if (matching.accept === false) {
-      matching.accept = true;
+
+    const sockets: MatchingUsersSocket = this.getMatchingUsersSocket(matching);
+    if (!sockets.areAvailable()) return;
+    if (!sockets.checkSocketPermission(connected.id)) return;
+
+    if (matching.accept === MatchingAcceptUser.NONE) {
+      if (connected.id === sockets.user1) matching.accept = MatchingAcceptUser.USER_1;
+      else matching.accept = MatchingAcceptUser.USER_2;
       this.matchingRepository.update(acceptMatchingDto.matchingId, matching);
       return;
     }
 
     // 매칭 성공 메세지 보내기
-    const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
-    const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
 
     const newGame: Game | null = await this.gameConnectGateway.createNewGame(
       matching.user1Id,
       matching.user2Id,
-      user1Socket,
-      user2Socket,
+      sockets.user1,
+      sockets.user2,
     );
     const confirmData: EmitConfirm = new EmitConfirm(newGame); // newGame ? Game.result == true:  Game.result == false;
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
 
-    // socket을 찾았을때만 emit;
-    if (user1Socket !== undefined) this.server.to(user1Socket).emit(GameMatchingEvent.confirm, confirmData);
-    if (user2Socket !== undefined) this.server.to(user2Socket).emit(GameMatchingEvent.confirm, confirmData);
+    this.server.to(sockets.user1).emit(GameMatchingEvent.confirm, confirmData);
+    this.server.to(sockets.user2).emit(GameMatchingEvent.confirm, confirmData);
 
     // changeState();
     this.gameConnectGateway.updateInGameStatus(matching.user1Id, matching.user2Id, confirmData);
@@ -96,38 +140,21 @@ export class GameMatchingGateway {
   async rejectMatching(@ConnectedSocket() connected: Socket, @MessageBody() rejectMatchingDto: { matchingId: number }) {
     const matching = this.matchingRepository.find(rejectMatchingDto.matchingId);
     if (matching === undefined) return;
+
+    const sockets: MatchingUsersSocket = this.getMatchingUsersSocket(matching);
+    if (!sockets.areAvailable()) return;
+    if (!sockets.checkSocketPermission(connected.id)) return;
+
     this.matchingRepository.delete(rejectMatchingDto.matchingId);
 
     let accepterSocket: string = undefined;
-    let accepterId: number = undefined;
-    let changeState: () => void = undefined;
-    const user1Socket: string | undefined = this.userSocketRepository.find(matching.user1Id);
-    const user2Socket: string | undefined = this.userSocketRepository.find(matching.user2Id);
 
-    if (user1Socket === connected.id) {
-      accepterSocket = user2Socket;
-      accepterId = matching.user2Id;
-      changeState = () => {
-        this.userStateRepository.update(matching.user2Id, UserState.IN_QUEUE);
-        this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-      };
-    } else if (user2Socket === connected.id) {
-      accepterSocket = user1Socket;
-      accepterId = matching.user1Id;
-      changeState = () => {
-        this.userStateRepository.update(matching.user1Id, UserState.IN_QUEUE);
-        this.userStateRepository.update(matching.user2Id, UserState.IDLE);
-      };
-    } else {
-      this.userStateRepository.update(matching.user1Id, UserState.IDLE);
-      this.userStateRepository.update(matching.user2Id, UserState.IDLE);
-      return;
-    }
+    if (connected.id === sockets.user1) accepterSocket = sockets.user2;
+    else accepterSocket = sockets.user1;
 
     const data: EmitConfirm = new EmitConfirm(null);
     this.server.to(accepterSocket).emit(GameMatchingEvent.confirm, data);
-    const user: User = await this.userRepository.findOne({ where: { id: accepterId } });
-    if (user !== null) this.queueRepository.save([user.id, user.rating]);
-    changeState();
+    this.userStateRepository.update(matching.user1Id, UserState.IDLE);
+    this.userStateRepository.update(matching.user2Id, UserState.IDLE);
   }
 }
