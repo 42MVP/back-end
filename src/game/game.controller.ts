@@ -1,4 +1,4 @@
-import { Body, Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { GameService } from './game.service';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
@@ -8,8 +8,8 @@ import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 export class GameController {
   constructor(private readonly gameService: GameService) {}
 
-  @Get('finish')
-  async getGameHistory(@ExtractId() userId: number, @Body() gameHistoryId: number) {
+  @Get('game-history/:id')
+  async getGameHistory(@ExtractId() userId: number, @Param('id') gameHistoryId: number) {
     return await this.gameService.getGameHistory(userId, gameHistoryId);
   }
 }
