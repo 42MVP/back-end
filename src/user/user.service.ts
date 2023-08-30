@@ -89,7 +89,26 @@ export class UserService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto, avatarUrl: string): Promise<void> {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<void> {
+    const result: UpdateResult = await this.userRepository
+      .update(
+        {
+          id: id,
+        },
+        {
+          userName: updateUserDto.name,
+          isAuth: this.booleanify(updateUserDto.isAuth),
+        },
+      )
+      .catch(() => {
+        throw new ConflictException('중복된 닉네임 입니다!');
+      });
+    if (result.affected == 0) {
+      throw new NotFoundException('해당 유저가 존재하지 않습니다!');
+    }
+  }
+
+  async updateWithAvatar(id: number, updateUserDto: UpdateUserDto, avatarUrl: string): Promise<void> {
     const result: UpdateResult = await this.userRepository
       .update(
         {
