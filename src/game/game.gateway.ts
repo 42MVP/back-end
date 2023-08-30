@@ -1,7 +1,7 @@
 import { ConnectedSocket, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { Ball, EmitFinish, EmitInit, Game, GameSetting, Paddle, RenderInfo, defaultSetting } from './game';
+import { Ball, EmitFinish, EmitInit, Game, GameSetting, GameStatus, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
 
@@ -23,42 +23,52 @@ export class GameGateway {
     else targetGame.connectInfo.isRightReady = true;
   }
 
-  sendErrorAndDestroyGame(game: Game): void {
-    this.server.to(game.gameInfo.roomId.toString()).emit('game-error');
+  leaveGameRoom(game: Game) {
     this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
     this.server.to(game.gameInfo.rightUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
     this.gameRepository.delete(game.gameInfo.roomId);
   }
 
-  makeGameWalkOver(game: Game, isLeftReady: boolean) {
-    game.connectInfo.isGameEnd = true;
+  sendErrorAndLeaveGame(game: Game): void {
+    this.server.to(game.gameInfo.roomId.toString()).emit('game-error');
+    this.leaveGameRoom(game);
+  }
+
+  makeGameWalkOver(game: Game) {
+    const isLeftReady: boolean = game.connectInfo.isLeftReady;
+
+    game.connectInfo.gameStatus = GameStatus.GAME_END;
     game.scoreInfo.leftScore = isLeftReady ? this.setting.matchPoint : 0;
     game.scoreInfo.rightScore = isLeftReady ? 0 : this.setting.matchPoint;
     game.resultInfo.win = isLeftReady ? game.gameInfo.leftUser : game.gameInfo.rightUser;
     game.resultInfo.defeat = isLeftReady ? game.gameInfo.rightUser : game.gameInfo.leftUser;
   }
 
-  async isGameReady(game: Game): Promise<boolean> {
+  async checkGameReady(game: Game): Promise<void> {
     while (game.connectInfo.expiredTimeMs > new Date().getTime()) {
       if (game.connectInfo.isLeftReady && game.connectInfo.isRightReady) {
-        return true;
+        game.connectInfo.gameStatus = GameStatus.GAME_READY;
+        return;
       }
       await new Promise(f => setTimeout(f, 500));
     }
-    return false;
+    game.connectInfo.gameStatus =
+      !game.connectInfo.isLeftReady && !game.connectInfo.isRightReady ? GameStatus.UNAVAILABLE : GameStatus.GAME_END;
   }
 
   async waitForGamePlayers(game: Game) {
-    if (await this.isGameReady(game)) {
-      this.startGame(game);
-    } else {
-      if (!game.connectInfo.isLeftReady && !game.connectInfo.isRightReady) {
-        this.sendErrorAndDestroyGame(game);
-      } else {
-        if (game.connectInfo.isLeftReady) this.makeGameWalkOver(game, true);
-        else this.makeGameWalkOver(game, false);
+    await this.checkGameReady(game);
+    switch (game.connectInfo.gameStatus) {
+      case GameStatus.GAME_READY:
+        this.startGame(game);
+        break;
+      case GameStatus.GAME_END:
+        this.makeGameWalkOver(game);
         await this.repeatGameLoop(game);
-      }
+        break;
+      case GameStatus.UNAVAILABLE:
+        this.sendErrorAndLeaveGame(game);
+        break;
     }
   }
 
@@ -67,6 +77,7 @@ export class GameGateway {
       .to(game.gameInfo.roomId.toString())
       .emit('start', { startTimeMs: new Date().getTime() + this.START_TIME_MS });
     setTimeout(() => {
+      game.connectInfo.gameStatus = GameStatus.IN_GAME;
       game.connectInfo.gameLoopId = setInterval(this.repeatGameLoop.bind(this), 10, game);
     }, this.START_TIME_MS);
   }
@@ -76,15 +87,14 @@ export class GameGateway {
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
       game.renderInfo = new RenderInfo();
-      if (!game.connectInfo.isGameEnd) this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
+      if (game.connectInfo.gameStatus === GameStatus.IN_GAME)
+        this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
-    if (game.connectInfo.isGameEnd) {
-      clearInterval(game.connectInfo.gameLoopId); // out of gameLoop -> Exit
+    if (game.connectInfo.gameStatus === GameStatus.GAME_END) {
+      clearInterval(game.connectInfo.gameLoopId);
       const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
-      this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
-      this.server.to(game.gameInfo.rightUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
-      this.gameRepository.delete(game.gameInfo.roomId);
+      this.leaveGameRoom(game);
     } else {
       this.server.to(game.gameInfo.roomId.toString()).emit('render', game.renderInfo);
     }
@@ -137,14 +147,14 @@ export class GameGateway {
     if (isLeftScored) {
       game.scoreInfo.leftScore++;
       if (game.scoreInfo.leftScore === this.setting.matchPoint) {
-        game.connectInfo.isGameEnd = true;
+        game.connectInfo.gameStatus = GameStatus.GAME_END;
         game.resultInfo.win = game.gameInfo.leftUser;
         game.resultInfo.defeat = game.gameInfo.rightUser;
       }
     } else {
       game.scoreInfo.rightScore++;
       if (game.scoreInfo.rightScore === this.setting.matchPoint) {
-        game.connectInfo.isGameEnd = true;
+        game.connectInfo.gameStatus = GameStatus.GAME_END;
         game.resultInfo.win = game.gameInfo.rightUser;
         game.resultInfo.defeat = game.gameInfo.leftUser;
       }
@@ -160,16 +170,20 @@ export class GameGateway {
   @SubscribeMessage('arrowUp')
   handleKeyPressUp(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
-    const userPaddle = this.findUserPaddle(client, game);
-    if (userPaddle == null) return; // invalid;
-    if (userPaddle.y > 0) userPaddle.y -= this.setting.paddleSpeed;
+    if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
+      const userPaddle = this.findUserPaddle(client, game);
+      if (userPaddle == null) return; // invalid;
+      if (userPaddle.y > 0) userPaddle.y -= this.setting.paddleSpeed;
+    }
   }
 
   @SubscribeMessage('arrowDown')
   handleKeyPressDown(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
-    const userPaddle = this.findUserPaddle(client, game);
-    if (userPaddle == null) return; // invalid;
-    if (userPaddle.y < this.setting.gameHeight - userPaddle.height) userPaddle.y += this.setting.paddleSpeed;
+    if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
+      const userPaddle = this.findUserPaddle(client, game);
+      if (userPaddle == null) return; // invalid;
+      if (userPaddle.y < this.setting.gameHeight - userPaddle.height) userPaddle.y += this.setting.paddleSpeed;
+    }
   }
 }

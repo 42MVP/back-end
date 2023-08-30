@@ -1,5 +1,12 @@
 import { User } from 'src/common/entities/user.entity';
 
+export enum GameStatus {
+  GAME_READY = 0,
+  IN_GAME = 1,
+  GAME_END = 2,
+  UNAVAILABLE = 3,
+}
+
 export const defaultSetting: GameSetting = {
   gameWidth: 1100,
   gameHeight: 700,
@@ -39,7 +46,7 @@ export class Game {
 
 export class ConnectInfo {
   gameLoopId: ReturnType<typeof setInterval>;
-  isGameEnd: boolean;
+  gameStatus: GameStatus;
   isLeftReady: boolean;
   isRightReady: boolean;
   expiredTimeMs: number;
@@ -47,7 +54,7 @@ export class ConnectInfo {
   constructor() {
     const ADD_EXPIRED_TIME_MS = 10000;
 
-    this.isGameEnd = false;
+    this.gameStatus = GameStatus.GAME_READY;
     this.isLeftReady = false;
     this.isRightReady = false;
     this.expiredTimeMs = new Date().getTime() + ADD_EXPIRED_TIME_MS;

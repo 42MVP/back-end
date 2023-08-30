@@ -12,7 +12,7 @@ import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { AuthService } from 'src/auth/auth.service';
 import { Logger } from '@nestjs/common';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-import { Game } from 'src/game/game';
+import { Game, GameStatus } from 'src/game/game';
 import { GameRepository } from 'src/repository/game.repository';
 import { QueueRepository } from 'src/repository/queue.repository';
 
@@ -81,7 +81,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
 
   forceQuitGame(game: Game | undefined, exitUserId: number) {
     if (game !== undefined) {
-      game.connectInfo.isGameEnd = true;
+      game.connectInfo.gameStatus = GameStatus.GAME_END;
       game.resultInfo.win =
         exitUserId === game.gameInfo.leftUser.userId ? game.gameInfo.rightUser : game.gameInfo.leftUser;
       game.resultInfo.defeat =
