@@ -14,16 +14,26 @@ export class S3Service {
     });
   }
 
-  async avatarUpload(file: Express.MulterS3.File, userName: string): Promise<string> {
+  async avatarUpload(file: Express.MulterS3.File, id: number): Promise<string> {
     const uploadResult = await this.s3
       .upload({
         Bucket: this.configService.get('AWS_S3_BUCKET'),
-        Key: `${this.configService.get('AWS_S3_AVATAR_FOLDER')}${userName}_avatar`,
+        Key: `${this.configService.get('AWS_S3_AVATAR_FOLDER')}${id}_avatar.${this.extractFileExtension(
+          file.originalname,
+        )}`,
         ContentType: file.mimetype,
         Body: file.buffer,
       })
       .promise();
 
     return uploadResult.Location;
+  }
+
+  extractFileExtension(fileName: string): string | null {
+    const parts = fileName.split('.');
+    if (parts.length > 1) {
+      return parts[parts.length - 1];
+    }
+    return null;
   }
 }

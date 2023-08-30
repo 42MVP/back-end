@@ -8,4 +8,7 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   isAuth: string;
+
+  @IsOptional()
+  avatar: string;
 }

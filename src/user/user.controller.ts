@@ -11,8 +11,8 @@ import { OtherUserResponseDto } from './dto/other-user-response.dto';
 import { FriendService } from 'src/friend/friend.service';
 import { BlockService } from 'src/block/block.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { avatarValidatPipe } from 'src/common/pipes/avatar-validate.pipe';
 import { S3Service } from 'src/s3/s3.service';
+import { multerOptions } from 'src/configs/multer-options';
 
 @UseGuards(JwtAuthGuard)
 @Controller('user')
@@ -61,14 +61,17 @@ export class UserController {
   }
 
   @Put()
-  @UseInterceptors(FileInterceptor('avatar'))
+  @UseInterceptors(FileInterceptor('avatar', multerOptions))
   async update(
     @ExtractId() id: number,
-    @UploadedFile(avatarValidatPipe) avatar: Express.MulterS3.File,
+    @UploadedFile() avatar: Express.MulterS3.File | null,
     @Body() updateUserDto: UpdateUserDto,
   ): Promise<void> {
-    const user: User = await this.userService.findOneById(id);
-    const url: string = await this.s3Service.avatarUpload(avatar, user.userName);
-    return await this.userService.update(id, updateUserDto, url);
+    if (avatar) {
+      const user: User = await this.userService.findOneById(id);
+      const url: string = await this.s3Service.avatarUpload(avatar, user.id);
+      return await this.userService.updateWithAvatar(id, updateUserDto, url);
+    }
+    return await this.userService.update(id, updateUserDto);
   }
 }

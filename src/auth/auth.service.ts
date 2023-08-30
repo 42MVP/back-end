@@ -63,7 +63,7 @@ export class AuthService {
     await this.mailerService
       .sendMail({
         to: email,
-        from: 'nobil2474@naver.com',
+        from: `${this.configService.get('MAIL_USER')}@naver.com`,
         subject: '42MVP 인증 메일',
         html: `<h1>인증 코드: [${code}]</h1>`,
       })
