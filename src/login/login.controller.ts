@@ -45,7 +45,7 @@ export class LoginController {
         res
           .cookie('access-token', jwtToken.accessToken)
           .cookie('refresh-token', jwtToken.refreshToken)
-          .redirect('http://localhost:5173/signin/oauth');
+          .redirect(`http://localhost:5173/signin/oauth?token=${jwtToken.accessToken}`);
       }
     } else {
       const registedUserId = await this.loginService.register(user);
@@ -54,7 +54,7 @@ export class LoginController {
       res
         .cookie('access-token', jwtToken.accessToken)
         .cookie('refresh-token', jwtToken.refreshToken)
-        .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}`);
+        .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}&token=${jwtToken.accessToken}`);
     }
   }
 
@@ -66,8 +66,7 @@ export class LoginController {
     await this.userService.updateRefreshToken(id, jwtToken.refreshToken);
     res
       .clearCookie('two-factor-token')
-      .cookie('access-token', jwtToken.accessToken)
       .cookie('refresh-token', jwtToken.refreshToken)
-      .send();
+      .send({ 'access-token': jwtToken.access });
   }
 }

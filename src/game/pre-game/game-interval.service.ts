@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Interval } from '@nestjs/schedule';
-import { Matching, MatchingRepository } from 'src/repository/matching.repository';
+import { Matching, MatchingAcceptUser, MatchingRepository } from 'src/repository/matching.repository';
 import { QueueRepository, rating, userId } from 'src/repository/queue.repository';
 import { GameInvitationGateway } from './invitation/game-invitation.gateway';
 import { GameMatchingGateway } from './matching/game-matching.gateway';
@@ -61,19 +61,34 @@ export class GameIntervalService {
     this.userStateRepository.update(user1Id, UserState.IN_MATCHING);
     this.userStateRepository.update(user2Id, UserState.IN_MATCHING);
     const matchingId: number = this.matchingRepository.save(user1Id, user2Id);
-    this.gameMatchingGateway.sendMatching(user1Id, matchingId);
-    this.gameMatchingGateway.sendMatching(user2Id, matchingId);
+    const matching: Matching = this.matchingRepository.find(matchingId);
+    this.gameMatchingGateway.sendMatching(user1Id, {
+      matchingId: matchingId,
+      endTimeMs: matching.expiredTime,
+    });
+    this.gameMatchingGateway.sendMatching(user2Id, {
+      matchingId: matchingId,
+      endTimeMs: matching.expiredTime,
+    });
   }
 
   removeExpiredMatching(): void {
-    const MATCHING_TIMEOUT_MS = 15000;
     const matchings: Map<number, Matching> = this.matchingRepository.findAll();
 
     console.log('matchings: ', matchings);
 
     matchings.forEach((value: Matching, key: number) => {
-      if (new Date().getTime() - value.time.getTime() > MATCHING_TIMEOUT_MS) {
-        this.gameMatchingGateway.sendMatchingTimeout(value.user1Id, value.user2Id);
+      if (new Date().getTime() > value.expiredTime) {
+        if (value.accept === MatchingAcceptUser.NONE) {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user1Id);
+          this.gameMatchingGateway.sendMatchingTimeout(value.user2Id);
+        } else if (value.accept === MatchingAcceptUser.USER_1) {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user2Id);
+          this.gameMatchingGateway.sendMatchingRejected(value.user1Id);
+        } else {
+          this.gameMatchingGateway.sendMatchingTimeout(value.user1Id);
+          this.gameMatchingGateway.sendMatchingRejected(value.user2Id);
+        }
         this.matchingRepository.delete(key);
         this.userStateRepository.update(value.user1Id, UserState.IDLE);
         this.userStateRepository.update(value.user2Id, UserState.IDLE);
@@ -82,12 +97,11 @@ export class GameIntervalService {
   }
 
   removeExpiredInvitation(): void {
-    const INVITATION_TIMEOUT_MS = 10000;
     const invitations: Map<number, Invitation> = this.invitationRepository.findAll();
 
     console.log('invitation: ', invitations);
     invitations.forEach((value: Invitation, key: number) => {
-      if (new Date().getTime() - value.time.getTime() > INVITATION_TIMEOUT_MS) {
+      if (new Date().getTime() > value.expiredTime) {
         this.gameInvitationGateway.sendInviteTimeout(value);
         this.invitationRepository.delete(key);
         this.userStateRepository.update(value.inviteeId, UserState.IDLE);

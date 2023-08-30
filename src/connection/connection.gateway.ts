@@ -2,6 +2,7 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
@@ -11,6 +12,8 @@ import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { AuthService } from 'src/auth/auth.service';
 import { Logger } from '@nestjs/common';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
+import { Game } from 'src/game/game';
+import { GameRepository } from 'src/repository/game.repository';
 
 @WebSocketGateway({ cors: true })
 export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -18,6 +21,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     private readonly connectionService: ConnectionService,
     private readonly userSocketRepository: UserSocketRepository,
     private readonly userStateRepository: UserStateRepository,
+    private readonly gameRepository: GameRepository,
     private readonly authService: AuthService,
   ) {}
   @WebSocketServer()
@@ -49,6 +53,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     // 개발용
     try {
       const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
+      this.forceQuitGame(this.gameRepository.findBySocket(client.id), id);
       this.userSocketRepository.delete(id);
       this.userStateRepository.delete(id);
     } catch (e) {
@@ -56,5 +61,21 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     }
     client.disconnect();
     // 배포용
+  }
+
+  @SubscribeMessage('forceQuit')
+  async handleForceQuit(@ConnectedSocket() client: Socket) {
+    const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
+    this.forceQuitGame(this.gameRepository.findBySocket(client.id), id);
+  }
+
+  forceQuitGame(game: Game | undefined, exitUserId: number) {
+    if (game !== undefined) {
+      game.isGameEnd = true;
+      game.resultInfo.win =
+        exitUserId === game.gameInfo.leftUser.userId ? game.gameInfo.rightUser : game.gameInfo.leftUser;
+      game.resultInfo.defeat =
+        exitUserId === game.gameInfo.rightUser.userId ? game.gameInfo.rightUser : game.gameInfo.leftUser;
+    }
   }
 }
