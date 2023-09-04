@@ -12,8 +12,9 @@ import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { AuthService } from 'src/auth/auth.service';
 import { Logger } from '@nestjs/common';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
-import { Game } from 'src/game/game';
+import { Game, GameStatus, defaultSetting } from 'src/game/game';
 import { GameRepository } from 'src/repository/game.repository';
+import { QueueRepository } from 'src/repository/queue.repository';
 
 @WebSocketGateway({ cors: true })
 export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -23,6 +24,7 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     private readonly userStateRepository: UserStateRepository,
     private readonly gameRepository: GameRepository,
     private readonly authService: AuthService,
+    private readonly queueRepository: QueueRepository,
   ) {}
   @WebSocketServer()
   server: Server;
@@ -53,7 +55,15 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
     // 개발용
     try {
       const id: number = await this.authService.jwtVerify(client.handshake.auth.token);
-      this.forceQuitGame(this.gameRepository.findBySocket(client.id), id);
+      const state: UserState = this.userStateRepository.find(id);
+      switch (state) {
+        case UserState.IN_GAME:
+          this.forceQuitGame(this.gameRepository.findBySocket(client.id), id);
+          break;
+        case UserState.IN_QUEUE:
+          this.queueRepository.delete(id);
+          break;
+      }
       this.userSocketRepository.delete(id);
       this.userStateRepository.delete(id);
     } catch (e) {
@@ -71,11 +81,12 @@ export class ConnectionGateway implements OnGatewayConnection, OnGatewayDisconne
 
   forceQuitGame(game: Game | undefined, exitUserId: number) {
     if (game !== undefined) {
-      game.isGameEnd = true;
-      game.resultInfo.win =
-        exitUserId === game.gameInfo.leftUser.userId ? game.gameInfo.rightUser : game.gameInfo.leftUser;
-      game.resultInfo.defeat =
-        exitUserId === game.gameInfo.rightUser.userId ? game.gameInfo.rightUser : game.gameInfo.leftUser;
+      const leftExit: boolean = exitUserId === game.gameInfo.leftUser.userId ? true : false;
+      game.connectInfo.gameStatus = GameStatus.GAME_END;
+      game.scoreInfo.leftScore = leftExit ? 0 : defaultSetting.matchPoint;
+      game.scoreInfo.rightScore = leftExit ? defaultSetting.matchPoint : 0;
+      game.resultInfo.win = leftExit ? game.gameInfo.rightUser : game.gameInfo.leftUser;
+      game.resultInfo.defeat = leftExit ? game.gameInfo.leftUser : game.gameInfo.rightUser;
     }
   }
 }
