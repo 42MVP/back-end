@@ -12,7 +12,6 @@ export class GameGateway {
   @WebSocketServer()
   server: Server;
 
-  setting: GameSetting = defaultSetting;
   START_TIME_MS = 5000;
 
   @SubscribeMessage('ready')
@@ -38,8 +37,8 @@ export class GameGateway {
     const isLeftReady: boolean = game.connectInfo.isLeftReady;
 
     game.connectInfo.gameStatus = GameStatus.GAME_END;
-    game.scoreInfo.leftScore = isLeftReady ? this.setting.matchPoint : 0;
-    game.scoreInfo.rightScore = isLeftReady ? 0 : this.setting.matchPoint;
+    game.scoreInfo.leftScore = isLeftReady ? defaultSetting.matchPoint : 0;
+    game.scoreInfo.rightScore = isLeftReady ? 0 : defaultSetting.matchPoint;
     game.resultInfo.win = isLeftReady ? game.gameInfo.leftUser : game.gameInfo.rightUser;
     game.resultInfo.defeat = isLeftReady ? game.gameInfo.rightUser : game.gameInfo.leftUser;
   }
@@ -101,8 +100,8 @@ export class GameGateway {
   }
 
   moveBall(game: Game) {
-    game.renderInfo.ball.x += this.setting.ballSpeed * game.renderInfo.ball.dx;
-    game.renderInfo.ball.y += this.setting.ballSpeed * game.renderInfo.ball.dy;
+    game.renderInfo.ball.x += defaultSetting.ballSpeed * game.renderInfo.ball.dx;
+    game.renderInfo.ball.y += defaultSetting.ballSpeed * game.renderInfo.ball.dy;
   }
 
   // 공이 천장 내지는 패들에 부딫혔을때 -> 공의 벡터를 바꿈;
@@ -112,18 +111,18 @@ export class GameGateway {
     const rightPaddle: Paddle = game.renderInfo.rightPaddle;
 
     // 천장에 부딪혔을때;
-    if (ball.y <= 0 + this.setting.ballRad) ball.dy *= -1;
-    if (ball.y >= this.setting.gameHeight - this.setting.ballRad) ball.dy *= -1;
+    if (ball.y <= 0 + defaultSetting.ballRad) ball.dy *= -1;
+    if (ball.y >= defaultSetting.gameHeight - defaultSetting.ballRad) ball.dy *= -1;
     // player paddle에 부딪혔을때;
-    if (ball.x <= leftPaddle.x + leftPaddle.width + this.setting.ballRad) {
+    if (ball.x <= leftPaddle.x + leftPaddle.width + defaultSetting.ballRad) {
       if (ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) {
-        ball.x = leftPaddle.x + leftPaddle.width + this.setting.ballRad; // 공이 꼈을때;
+        ball.x = leftPaddle.x + leftPaddle.width + defaultSetting.ballRad; // 공이 꼈을때;
         ball.dx *= -1;
       }
     }
-    if (ball.x >= rightPaddle.x - this.setting.ballRad) {
+    if (ball.x >= rightPaddle.x - defaultSetting.ballRad) {
       if (ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height) {
-        ball.x = rightPaddle.x - this.setting.ballRad; // 공이 꼈을때;
+        ball.x = rightPaddle.x - defaultSetting.ballRad; // 공이 꼈을때;
         ball.dx *= -1;
       }
     }
@@ -132,7 +131,7 @@ export class GameGateway {
 
   // 벽 충돌 판정 -> 스코어 업데이트
   checkWallCollision(game: Game): boolean {
-    if (game.renderInfo.ball.x >= this.setting.gameWidth) {
+    if (game.renderInfo.ball.x >= defaultSetting.gameWidth) {
       this.updateGameUserScore(game, true);
       return true;
     }
@@ -146,14 +145,14 @@ export class GameGateway {
   updateGameUserScore(game: Game, isLeftScored: boolean) {
     if (isLeftScored) {
       game.scoreInfo.leftScore++;
-      if (game.scoreInfo.leftScore === this.setting.matchPoint) {
+      if (game.scoreInfo.leftScore === defaultSetting.matchPoint) {
         game.connectInfo.gameStatus = GameStatus.GAME_END;
         game.resultInfo.win = game.gameInfo.leftUser;
         game.resultInfo.defeat = game.gameInfo.rightUser;
       }
     } else {
       game.scoreInfo.rightScore++;
-      if (game.scoreInfo.rightScore === this.setting.matchPoint) {
+      if (game.scoreInfo.rightScore === defaultSetting.matchPoint) {
         game.connectInfo.gameStatus = GameStatus.GAME_END;
         game.resultInfo.win = game.gameInfo.rightUser;
         game.resultInfo.defeat = game.gameInfo.leftUser;
@@ -173,7 +172,7 @@ export class GameGateway {
     if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
       const userPaddle = this.findUserPaddle(client, game);
       if (userPaddle == null) return; // invalid;
-      if (userPaddle.y > 0) userPaddle.y -= this.setting.paddleSpeed;
+      if (userPaddle.y > 0) userPaddle.y -= defaultSetting.paddleSpeed;
     }
   }
 
@@ -183,7 +182,7 @@ export class GameGateway {
     if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
       const userPaddle = this.findUserPaddle(client, game);
       if (userPaddle == null) return; // invalid;
-      if (userPaddle.y < this.setting.gameHeight - userPaddle.height) userPaddle.y += this.setting.paddleSpeed;
+      if (userPaddle.y < defaultSetting.gameHeight - userPaddle.height) userPaddle.y += defaultSetting.paddleSpeed;
     }
   }
 }
