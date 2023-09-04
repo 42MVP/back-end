@@ -36,7 +36,7 @@ export class ChatService {
 
   async getChatUserDto(chatUser: ChatUser): Promise<ChatUserDto> {
     const user: User = await this.findExistUser(chatUser.userId);
-    return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
+    return new ChatUserDto(user.id, user.userName, user.avatar, chatUser.role, chatUser.muteTime);
   }
 
   async getChatUserList(chatUsers: ChatUser[], isBanned: boolean): Promise<ChatUserDto[]> {
@@ -280,7 +280,7 @@ export class ChatService {
           roomId: targetRoomId,
           userId: targetUserId,
           name: user?.userName,
-          avatarURL: 'will be added',
+          avatarURL: user?.avatar,
         });
         break;
       case ChatUserStatus.MUTE:
@@ -314,7 +314,7 @@ export class ChatService {
       roomId: chatUser.roomId,
       userId: chatUser.userId,
       name: user?.userName,
-      avatarURL: 'will be added',
+      avatarURL: user?.avatar,
     });
     this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
   }
