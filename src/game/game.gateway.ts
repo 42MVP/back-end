@@ -35,11 +35,6 @@ export class GameGateway {
     this.userStateRepository.update(game.gameInfo.rightUser.userId, UserState.IDLE);
   }
 
-  sendErrorAndLeaveGame(game: Game): void {
-    this.server.to(game.gameInfo.roomId.toString()).emit('game-error');
-    this.leaveGameRoom(game);
-  }
-
   makeGameWalkOver(game: Game) {
     const isLeftReady: boolean = game.connectInfo.isLeftReady;
 
@@ -73,7 +68,8 @@ export class GameGateway {
         await this.repeatGameLoop(game);
         break;
       case GameStatus.UNAVAILABLE:
-        this.sendErrorAndLeaveGame(game);
+        this.server.to(game.gameInfo.roomId.toString()).emit('game-error');
+        this.leaveGameRoom(game);
         break;
     }
   }
@@ -176,20 +172,18 @@ export class GameGateway {
   @SubscribeMessage('arrowUp')
   handleKeyPressUp(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
-    if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
-      const userPaddle = this.findUserPaddle(client, game);
-      if (userPaddle == null) return; // invalid;
-      if (userPaddle.y > 0) userPaddle.y -= defaultSetting.paddleSpeed;
-    }
+    if (game.connectInfo.gameStatus !== GameStatus.IN_GAME) return;
+    const userPaddle = this.findUserPaddle(client, game);
+    if (userPaddle == null) return; // invalid;
+    if (userPaddle.y > 0) userPaddle.y -= defaultSetting.paddleSpeed;
   }
 
   @SubscribeMessage('arrowDown')
   handleKeyPressDown(@ConnectedSocket() client: Socket) {
     const game = this.gameRepository.findBySocket(client.id);
-    if (game.connectInfo.gameStatus === GameStatus.IN_GAME) {
-      const userPaddle = this.findUserPaddle(client, game);
-      if (userPaddle == null) return; // invalid;
-      if (userPaddle.y < defaultSetting.gameHeight - userPaddle.height) userPaddle.y += defaultSetting.paddleSpeed;
-    }
+    if (game.connectInfo.gameStatus !== GameStatus.IN_GAME) return;
+    const userPaddle = this.findUserPaddle(client, game);
+    if (userPaddle == null) return; // invalid;
+    if (userPaddle.y < defaultSetting.gameHeight - userPaddle.height) userPaddle.y += defaultSetting.paddleSpeed;
   }
 }
