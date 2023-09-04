@@ -4,10 +4,15 @@ import { GameService } from './game.service';
 import { Ball, EmitFinish, EmitInit, Game, GameStatus, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
+import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @WebSocketGateway()
 export class GameGateway {
-  constructor(private readonly gameService: GameService, private readonly gameRepository: GameRepository) {}
+  constructor(
+    private readonly gameService: GameService,
+    private readonly gameRepository: GameRepository,
+    private readonly userStateRepository: UserStateRepository,
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -26,6 +31,8 @@ export class GameGateway {
     this.server.to(game.gameInfo.leftUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
     this.server.to(game.gameInfo.rightUser.userSocket).socketsLeave(game.gameInfo.roomId.toString());
     this.gameRepository.delete(game.gameInfo.roomId);
+    this.userStateRepository.update(game.gameInfo.leftUser.userId, UserState.IDLE);
+    this.userStateRepository.update(game.gameInfo.rightUser.userId, UserState.IDLE);
   }
 
   sendErrorAndLeaveGame(game: Game): void {
