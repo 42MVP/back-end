@@ -1,7 +1,7 @@
 import { ConnectedSocket, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { GameService } from './game.service';
-import { Ball, EmitFinish, EmitInit, Game, GameSetting, GameStatus, Paddle, RenderInfo, defaultSetting } from './game';
+import { Ball, EmitFinish, EmitInit, Game, GameStatus, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
 
