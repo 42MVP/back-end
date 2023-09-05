@@ -43,7 +43,7 @@ export class LoginController {
         const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
         res
-          .cookie('refresh-token', jwtToken.refreshToken, { httpOnly: true })
+          .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
           .redirect(`http://localhost:5173/signin/oauth?token=${jwtToken.accessToken}`);
       }
     } else {
@@ -51,7 +51,7 @@ export class LoginController {
       const jwtToken = await this.authService.getJwtToken(registedUserId);
       await this.userService.updateRefreshToken(registedUserId, jwtToken.refreshToken);
       res
-        .cookie('refresh-token', jwtToken.refreshToken, { httpOnly: true })
+        .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
         .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}&token=${jwtToken.accessToken}`);
     }
   }

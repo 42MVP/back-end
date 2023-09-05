@@ -7,7 +7,11 @@ import { ConfigService } from '@nestjs/config';
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh') {
   constructor(private readonly configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        req => {
+          return req?.cookies['RefreshToken'];
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.get<string>('JWT_REFRESH_SECRET'),
     });
