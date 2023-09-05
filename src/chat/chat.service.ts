@@ -5,7 +5,6 @@ import { ChatRoom } from '../common/entities/chatroom.entity';
 import { ChatUser } from '../common/entities/chatuser.entity';
 import { User } from '../common/entities/user.entity';
 import { ChatRole, ChatRoomMode, ChatUserStatus } from '../common/enums';
-import { UserSocketRepository } from '../repository/user-socket.repository';
 import { MuteTimeRepository } from '../repository/mute-time.repository';
 import { ChatGateway } from './chat.gateway';
 import { newChatRoomDto } from './dto/request/new-chat-room.dto';
@@ -18,7 +17,6 @@ import { ChatRoomDataDto } from './dto/response/chat-room-data.dto';
 import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
-import { ChangedUserStatusDto } from './dto/response/changed-user-status.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -30,7 +28,6 @@ export class ChatService {
     private chatUserRepository: Repository<ChatUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private userSocketRepository: UserSocketRepository,
     private muteTimeRepository: MuteTimeRepository,
     private chatGateway: ChatGateway,
   ) {}
@@ -39,7 +36,7 @@ export class ChatService {
 
   async getChatUserDto(chatUser: ChatUser): Promise<ChatUserDto> {
     const user: User = await this.findExistUser(chatUser.userId);
-    return new ChatUserDto(user.id, user.userName, '', chatUser.role, chatUser.muteTime);
+    return new ChatUserDto(user.id, user.userName, user.avatar, chatUser.role, chatUser.muteTime);
   }
 
   async getChatUserList(chatUsers: ChatUser[], isBanned: boolean): Promise<ChatUserDto[]> {
@@ -283,7 +280,7 @@ export class ChatService {
           roomId: targetRoomId,
           userId: targetUserId,
           name: user?.userName,
-          avatarURL: 'will be added',
+          avatarURL: user?.avatar,
         });
         break;
       case ChatUserStatus.MUTE:
@@ -317,7 +314,7 @@ export class ChatService {
       roomId: chatUser.roomId,
       userId: chatUser.userId,
       name: user?.userName,
-      avatarURL: 'will be added',
+      avatarURL: user?.avatar,
     });
     this.chatGateway.joinToRoom(chatUser.userId, chatUser.roomId);
   }
