@@ -1,9 +1,10 @@
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Block } from '../common/entities/block.entity';
 import { User } from '../common/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { DeleteResult, Repository } from 'typeorm';
+import { Friendship } from 'src/common/entities/friendship.entity';
 
 @Injectable()
 export class BlockService {
@@ -12,6 +13,8 @@ export class BlockService {
     private blockRepository: Repository<Block>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Friendship)
+    private friendshipRepository: Repository<Friendship>,
     private userService: UserService,
   ) {}
 
@@ -24,9 +27,19 @@ export class BlockService {
   }
 
   async addBlockList(from: number, to: number): Promise<void> {
-    const toUser = await this.userService.findOneById(to);
-    if (!toUser) {
+    if (
+      !(await this.userRepository.exist({
+        where: { id: to },
+      }))
+    ) {
       throw new NotFoundException('차단 할 유저가 존재하지 않습니다!');
+    }
+    if (
+      await this.friendshipRepository.exist({
+        where: { fromId: from, toId: to },
+      })
+    ) {
+      await this.friendshipRepository.delete({ fromId: from, toId: to });
     }
     await this.blockRepository.save(new Block(from, to));
   }

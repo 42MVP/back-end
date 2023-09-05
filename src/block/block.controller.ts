@@ -1,8 +1,7 @@
-import { Body, Controller, Get, Post, UseFilters, Delete, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Post, UseFilters, Delete, UseGuards, Param } from '@nestjs/common';
 import { BlockService } from './block.service';
 import { User } from '../common/entities/user.entity';
 import { QueryFailedErrorFilter } from '../common/filters/query-failed.filter';
-import { BlockDto } from './dto/block.dto';
 import { JwtAuthGuard } from '../auth/jwt/jwt-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
 import { UserResponseBaseDto } from 'src/user/dto/user-response-base.dto';
