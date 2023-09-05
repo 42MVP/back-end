@@ -15,6 +15,7 @@ export class BlockService {
     private userRepository: Repository<User>,
     @InjectRepository(Friendship)
     private friendshipRepository: Repository<Friendship>,
+    private userService: UserService,
   ) {}
 
   async getBlockList(id: number): Promise<User[]> {
@@ -32,6 +33,13 @@ export class BlockService {
       }))
     ) {
       throw new NotFoundException('차단 할 유저가 존재하지 않습니다!');
+    }
+    if (
+      await this.friendshipRepository.exist({
+        where: { fromId: from, toId: to },
+      })
+    ) {
+      await this.friendshipRepository.delete({ fromId: from, toId: to });
     }
     await this.blockRepository.save(new Block(from, to));
   }
