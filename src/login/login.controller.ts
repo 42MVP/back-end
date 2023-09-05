@@ -38,13 +38,12 @@ export class LoginController {
       if (user.isAuth) {
         const twoFactorToken = await this.authService.getTwoFactorToken(user.id);
         await this.authService.sendTwoFactorMail(user.email, user.id);
-        res.cookie('two-factor-token', twoFactorToken).redirect('/two-factor');
+        res.redirect(`http://localhost:5173/signIn/2fa-auth?token?=${twoFactorToken}`);
       } else {
         const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
         res
-          .cookie('access-token', jwtToken.accessToken)
-          .cookie('refresh-token', jwtToken.refreshToken)
+          .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
           .redirect(`http://localhost:5173/signin/oauth?token=${jwtToken.accessToken}`);
       }
     } else {
@@ -52,8 +51,7 @@ export class LoginController {
       const jwtToken = await this.authService.getJwtToken(registedUserId);
       await this.userService.updateRefreshToken(registedUserId, jwtToken.refreshToken);
       res
-        .cookie('access-token', jwtToken.accessToken)
-        .cookie('refresh-token', jwtToken.refreshToken)
+        .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
         .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}&token=${jwtToken.accessToken}`);
     }
   }
@@ -65,8 +63,7 @@ export class LoginController {
     const jwtToken = await this.authService.getJwtToken(id);
     await this.userService.updateRefreshToken(id, jwtToken.refreshToken);
     res
-      .clearCookie('two-factor-token')
-      .cookie('refresh-token', jwtToken.refreshToken)
-      .send({ 'access-token': jwtToken.access });
+      .cookie('refresh-token', jwtToken.refreshToken, { httpOnly: true })
+      .send({ 'access-token': jwtToken.accessToken });
   }
 }
