@@ -94,6 +94,7 @@ export class GameGateway {
     }
     if (game.connectInfo.gameStatus === GameStatus.GAME_END) {
       clearInterval(game.connectInfo.gameLoopId);
+      await this.gameService.updateGameRating(game);
       const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
       this.leaveGameRoom(game);
