@@ -6,6 +6,7 @@ import { GameInvitationGateway } from './invitation/game-invitation.gateway';
 import { GameMatchingGateway } from './matching/game-matching.gateway';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
+import { GameMode } from '../game';
 
 @Injectable()
 export class GameIntervalService {
@@ -29,7 +30,8 @@ export class GameIntervalService {
   }
 
   matchMaking(): void {
-    const queue: Map<rating, userId> = this.queueRepository.findAll();
+    const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
+    const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
     let user2: Record<number, number> = undefined;
 
     console.log('queue: ', queue);

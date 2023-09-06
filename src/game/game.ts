@@ -7,6 +7,11 @@ export enum GameStatus {
   UNAVAILABLE = 3,
 }
 
+export enum GameMode {
+  MODE_ONE = 1,
+  MODE_TWO = 2,
+}
+
 export const defaultSetting: GameSetting = {
   gameWidth: 1100,
   gameHeight: 700,
