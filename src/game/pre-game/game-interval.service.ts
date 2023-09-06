@@ -39,12 +39,12 @@ export class GameIntervalService {
     console.log('queue: ', queue);
 
     for (const [userId, rating] of queue) {
-      console.log("IN MODE ONE QUEUE: target Rate: ", rating, "id: ", userId);
+      console.log('IN MODE ONE QUEUE: target Rate: ', rating, 'id: ', userId);
       if (this.isMatchSuitable({ rating, userId }, queue)) break;
     }
 
     for (const [userId, rating] of queue2) {
-      console.log("IN MODE TWO QUEUE: target Rate: ", rating, "id: ", userId);
+      console.log('IN MODE TWO QUEUE: target Rate: ', rating, 'id: ', userId);
       if (this.isMatchSuitable({ rating, userId }, queue2)) break;
     }
 
@@ -62,12 +62,12 @@ export class GameIntervalService {
   }
 
   isMatchSuitable(target: { rating: number; userId: number }, queue: Map<rating, userId>): boolean {
-    let average: number = 0;
+    let average = 0;
 
     for (const [userId, rating] of queue) {
       if (userId === target.userId) continue;
       const ratingDiff: number = target.rating - rating;
-      console.log(">>>>>>>>>>>>>>> rating Diff: ", ratingDiff);
+      console.log('>>>>>>>>>>>>>>> rating Diff: ', ratingDiff);
       if (Math.abs(ratingDiff) <= 200) {
         this.makeMatching(userId, target.userId);
         return true;
@@ -77,7 +77,7 @@ export class GameIntervalService {
 
     if (queue.size != 1) {
       average = average / (queue.size - 1);
-      this.queueRepository.update([target.userId, (target.rating - Math.round(average * 0.1))]);
+      this.queueRepository.update([target.userId, target.rating - Math.round(average * 0.1)]);
     }
     return false;
   }
