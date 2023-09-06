@@ -112,6 +112,7 @@ export class GameMatchingGateway {
     // 매칭 성공 메세지 보내기
 
     const newGame: Game | null = await this.gameConnectGateway.createNewGame(
+      matching.gameMode,
       matching.user1Id,
       matching.user2Id,
       sockets.user1,

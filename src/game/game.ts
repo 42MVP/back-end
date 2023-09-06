@@ -23,7 +23,7 @@ export const defaultSetting: GameSetting = {
   ballSpeed: 1,
 };
 
-const defaultBackground = {
+const backGround = {
   gameModeOne: 'black',
   gameModeTwo: 'pink',
 };
@@ -35,13 +35,13 @@ export class Game {
   renderInfo: RenderInfo;
   resultInfo: ResultInfo;
 
-  constructor(user1: GameUser, user2: GameUser) {
+  constructor(gameMode: GameMode, user1: GameUser, user2: GameUser) {
     this.connectInfo = new ConnectInfo();
     this.gameInfo = {
       roomId: 0,
       leftUser: user1,
       rightUser: user2,
-      backgroundColor: defaultBackground.gameModeOne,
+      backgroundColor: gameMode === GameMode.MODE_ONE ? backGround.gameModeOne : backGround.gameModeTwo,
     };
     this.scoreInfo = new ScoreInfo();
     this.renderInfo = new RenderInfo();
