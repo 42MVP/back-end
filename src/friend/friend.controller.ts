@@ -15,6 +15,9 @@ export class FriendController {
   async getFriendsList(@ExtractId() id: number): Promise<UserResponseBaseDto[]> {
     const userList: User[] = await this.friendService.getFriendsList(id);
     const userResponseList: UserResponseBaseDto[] = userList.map(user => new UserResponseBaseDto(user));
+
+    this.friendService.addFriendsConnectionState(userResponseList);
+
     return userResponseList;
   }
 

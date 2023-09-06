@@ -1,4 +1,5 @@
 import { User } from 'src/common/entities/user.entity';
+import { UserStateString } from 'src/repository/user-state.repository';
 
 export class UserResponseBaseDto {
   constructor(user: User) {
@@ -9,6 +10,11 @@ export class UserResponseBaseDto {
     this.winNum = user.winNum;
     this.loseNum = user.loseNum;
     this.rate = user.rating;
+    this.state = UserStateString.OFFLINE;
+  }
+
+  public updateState(state: string) {
+    this.state = state;
   }
 
   id: number;
@@ -18,4 +24,5 @@ export class UserResponseBaseDto {
   winNum: number;
   loseNum: number;
   rate: number;
+  state: string;
 }
