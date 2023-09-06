@@ -7,10 +7,11 @@ import { GameService } from './game.service';
 import { RepositoryModule } from 'src/repository/repository.module';
 import { GameController } from './game.controller';
 import { User } from 'src/common/entities/user.entity';
+import { GameRatingService } from './game-rating/game-rating.service';
 
 @Module({
   imports: [PreGameModule, TypeOrmModule.forFeature([GameHistory, User]), RepositoryModule],
-  providers: [GameGateway, GameService],
+  providers: [GameGateway, GameService, GameRatingService],
   controllers: [GameController],
 })
 export class GameModule {}
