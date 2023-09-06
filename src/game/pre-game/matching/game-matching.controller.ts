@@ -8,9 +8,9 @@ import { GameModePipe } from '../game-mode.pipe';
 export class GameMatchingController {
   constructor(private readonly gameMatchingService: GameMatchingService) {}
 
-  @Post('queue/:game-mode')
+  @Post('queue/:mode')
   @UseGuards(JwtAuthGuard)
-  applyQueue(@ExtractId() userId: number, @Param('game-mode', GameModePipe) gameMode: number): Promise<void> {
+  applyQueue(@ExtractId() userId: number, @Param('mode', GameModePipe) gameMode: number): Promise<void> {
     console.log('in-queue: ', userId);
     return this.gameMatchingService.applyQueue(userId, gameMode);
   }
