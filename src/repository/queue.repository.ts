@@ -28,6 +28,10 @@ export class QueueRepository {
     return;
   }
 
+  update(element:Record<userId, rating>) {
+    return this.modeMap.get(element[0]) === GameMode.MODE_ONE ? this.modeOneQueue.set(element[0], element[1]) : this.modeTwoQueue.set(element[0], element[1]);
+  }
+
   delete(userId: userId): boolean {
     this.modeMap.get(userId) === GameMode.MODE_ONE
       ? this.modeOneQueue.delete(userId)
