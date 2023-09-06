@@ -62,8 +62,6 @@ export class LoginController {
     await this.authService.checkCode(id.toString(), authCode.code);
     const jwtToken = await this.authService.getJwtToken(id);
     await this.userService.updateRefreshToken(id, jwtToken.refreshToken);
-    res
-      .cookie('refresh-token', jwtToken.refreshToken, { httpOnly: true })
-      .send({ 'access-token': jwtToken.accessToken });
+    res.cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true }).send(jwtToken.accessToken);
   }
 }
