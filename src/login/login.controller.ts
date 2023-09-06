@@ -38,7 +38,7 @@ export class LoginController {
       if (user.isAuth) {
         const twoFactorToken = await this.authService.getTwoFactorToken(user.id);
         await this.authService.sendTwoFactorMail(user.email, user.id);
-        res.redirect(`http://localhost:5173/signIn/2fa-auth?token?=${twoFactorToken}`);
+        res.redirect(`http://localhost:5173/signIn/2fa-auth?token=${twoFactorToken}`);
       } else {
         const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
