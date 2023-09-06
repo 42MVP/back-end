@@ -7,6 +7,7 @@ import { GameMatchingGateway } from './matching/game-matching.gateway';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameMode } from '../game';
+import { GameRatingService } from '../game-rating/game-rating.service';
 
 @Injectable()
 export class GameIntervalService {
@@ -17,6 +18,7 @@ export class GameIntervalService {
     private readonly userStateRepository: UserStateRepository,
     private readonly gameMatchingGateway: GameMatchingGateway,
     private readonly gameInvitationGateway: GameInvitationGateway,
+    private readonly gameRatingService: GameRatingService,
   ) {}
 
   @Interval(5000)
@@ -32,25 +34,46 @@ export class GameIntervalService {
   matchMaking(): void {
     const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
     const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
-    let user2: Record<number, number> = undefined;
+    // let user2: Record<number, number> = undefined;
 
     console.log('queue: ', queue);
 
     for (const [userId, rating] of queue) {
-      if (user2 === undefined) {
-        user2 = [userId, rating];
-        continue;
-      }
-      const user2Id = user2[0];
-      const user2Rating = user2[1];
-
-      if (this.isMatchSuitable()) this.makeMatching(userId, user2Id);
-      user2 = [userId, rating];
+      if (this.isMatchSuitable({ rating, userId }, queue)) break;
     }
+
+    for (const [userId, rating] of queue2) {
+      if (this.isMatchSuitable({ rating, userId }, queue2)) break;
+    }
+
+    // for (const [userId, rating] of queue) {
+    //   if (user2 === undefined) {
+    //     user2 = [userId, rating];
+    //     continue;
+    //   }
+    //   const user2Id = user2[0];
+    //   const user2Rating = user2[1];
+
+    //   if (this.isMatchSuitable()) this.makeMatching(userId, user2Id);
+    //   user2 = [userId, rating];
+    // }
   }
 
-  isMatchSuitable(): boolean {
-    return true;
+  isMatchSuitable(target: { rating: number; userId: number }, queue: Map<rating, userId>): boolean {
+    let average: number;
+
+    for (const [userId, rating] of queue) {
+      if (userId === target.userId) continue;
+      const ratingDiff: number = target.rating - rating;
+      if (Math.abs(ratingDiff) <= 200) {
+        this.makeMatching(userId, target.userId);
+        return true;
+      }
+      average += ratingDiff;
+    }
+    average = average / (queue.size - 1);
+    target.rating -= Math.round(average * 0.1);
+    return false;
   }
 
   makeMatching(user1Id: number, user2Id: number): void {
