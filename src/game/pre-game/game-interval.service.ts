@@ -63,7 +63,7 @@ export class GameIntervalService {
       average += ratingDiff;
     }
 
-    if (queue.size != 1) {
+    if (queue.size > 1) {
       average = average / (queue.size - 1);
       this.queueRepository.update([target.userId, target.rating - Math.round(average * 0.1)]);
     }
