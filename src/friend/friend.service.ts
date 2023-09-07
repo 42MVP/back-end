@@ -3,7 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../common/entities/user.entity';
 import { DeleteResult, Repository } from 'typeorm';
 import { Friendship } from '../common/entities/friendship.entity';
-import { UserService } from '../user/user.service';
+import { UserResponseBaseDto } from 'src/user/dto/user-response-base.dto';
+import { UserState, UserStateRepository, userStateToString } from 'src/repository/user-state.repository';
 
 @Injectable()
 export class FriendService {
@@ -12,7 +13,7 @@ export class FriendService {
     private userRepository: Repository<User>,
     @InjectRepository(Friendship)
     private friendshipRepository: Repository<Friendship>,
-    private userService: UserService,
+    private readonly userStateRepository: UserStateRepository,
   ) {}
 
   async getFriendsList(id: number): Promise<User[]> {
@@ -21,6 +22,13 @@ export class FriendService {
       .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')
       .where('friendship.from_id = :user_id', { user_id: id })
       .getMany();
+  }
+
+  addFriendsConnectionState(userResponseList: UserResponseBaseDto[]): void {
+    for (const userResponse of userResponseList) {
+      const state: UserState = this.userStateRepository.find(userResponse.id);
+      userResponse.updateState(userStateToString(state));
+    }
   }
 
   async addFriendList(from: number, to: number): Promise<void> {
