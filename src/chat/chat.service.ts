@@ -18,6 +18,7 @@ import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import * as bcrypt from 'bcrypt';
+import { Block } from 'src/common/entities/block.entity';
 
 @Injectable()
 export class ChatService {
@@ -28,6 +29,8 @@ export class ChatService {
     private chatUserRepository: Repository<ChatUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Block)
+    private blockRepository: Repository<Block>,
     private muteTimeRepository: MuteTimeRepository,
     private chatGateway: ChatGateway,
   ) {}
@@ -109,9 +112,14 @@ export class ChatService {
   }
 
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
-    await this.findExistUser(userId);
+    const inviter: User = await this.findExistUser(userId);
     if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
-    await this.findExistUser(newRoomInfo.dmId);
+    const invitee: User= await this.findExistUser(newRoomInfo.dmId);
+
+    const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id }});
+    const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
+    if (blocking) throw new BadRequestException('you blocked DM target user');
+    if (blocked) throw new BadRequestException('you have been blocked by DM target user');
     newRoomInfo.roomName = null;
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
