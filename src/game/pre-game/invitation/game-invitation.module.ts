@@ -9,11 +9,19 @@ import { GameHistory } from 'src/common/entities/game-history.entity';
 import { GameGateway } from 'src/game/game.gateway';
 import { GameService } from 'src/game/game.service';
 import { GameConnectGateway } from '../game-connect.gateway';
+import { GameRatingService } from 'src/game/game-rating/game-rating.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, GameHistory]), RepositoryModule],
   controllers: [GameInvitationController],
-  providers: [GameInvitationService, GameInvitationGateway, GameGateway, GameService, GameConnectGateway],
+  providers: [
+    GameInvitationService,
+    GameInvitationGateway,
+    GameGateway,
+    GameService,
+    GameConnectGateway,
+    GameRatingService,
+  ],
   exports: [GameInvitationGateway],
 })
 export class GameInvitationModule {}

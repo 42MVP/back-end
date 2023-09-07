@@ -15,6 +15,15 @@ export class GameService {
     private readonly userRepository: Repository<User>,
   ) {}
 
+  ratingUnit = 21;
+
+  // async updateGameRating(game: Game) {
+  //   game.resultInfo.win.rating += this.ratingUnit;
+  //   if (game.resultInfo.defeat.rating >= this.ratingUnit) game.resultInfo.defeat.rating -= this.ratingUnit;
+  //   await this.userRepository.update({ id: game.resultInfo.win.userId }, { rating: game.resultInfo.win.rating });
+  //   await this.userRepository.update({ id: game.resultInfo.defeat.userId }, { rating: game.resultInfo.defeat.rating });
+  // }
+
   async updateGameHistory(game: Game): Promise<number> {
     const newRecord: GameHistory = await this.gameHistoryRepository.save(
       new GameHistory(

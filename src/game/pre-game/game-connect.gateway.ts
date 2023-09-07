@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 import { User } from 'src/common/entities/user.entity';
 import { GameRepository } from 'src/repository/game.repository';
 import { Repository } from 'typeorm';
-import { EmitConfirm, Game, GameUser } from '../game';
+import { EmitConfirm, Game, GameMode, GameUser } from '../game';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 
 @WebSocketGateway()
@@ -20,6 +20,7 @@ export class GameConnectGateway {
   server: Server;
 
   async createNewGame(
+    gameMode: GameMode,
     user1Id: number,
     user2Id: number,
     user1Socket: string | undefined,
@@ -30,7 +31,7 @@ export class GameConnectGateway {
     if (!user1 || !user2 || user1Socket === undefined || user2Socket === undefined) {
       return null;
     } else {
-      const newGame: Game = new Game(new GameUser(user1, user1Socket), new GameUser(user2, user2Socket));
+      const newGame: Game = new Game(gameMode, new GameUser(user1, user1Socket), new GameUser(user2, user2Socket));
       newGame.gameInfo.roomId = this.gameRepository.save(newGame);
       return newGame;
     }

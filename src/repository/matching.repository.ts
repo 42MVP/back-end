@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { GameMode } from 'src/game/game';
 
 export const MATCHING_EXPIRED_MS = 10000;
 
@@ -9,6 +10,7 @@ export enum MatchingAcceptUser {
 }
 
 export interface Matching {
+  gameMode: GameMode;
   user1Id: number;
   user2Id: number;
   accept: MatchingAcceptUser;
@@ -33,9 +35,10 @@ export class MatchingRepository {
     return this.matchingMap;
   }
 
-  save(user1Id: number, user2Id: number): number {
+  save(gameMode: GameMode, user1Id: number, user2Id: number): number {
     const curIndex = this.index;
     this.matchingMap.set(curIndex, {
+      gameMode: gameMode,
       user1Id: user1Id,
       user2Id: user2Id,
       accept: MatchingAcceptUser.NONE,

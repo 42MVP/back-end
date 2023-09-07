@@ -6,7 +6,15 @@ import { Invitation, InvitationRepository } from 'src/repository/invitation.repo
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameConnectGateway } from '../game-connect.gateway';
-import { EmitInit, EmitInvite, EmitInviteConfirm, EmitInviteError, EmitInviteSuccess, Game } from 'src/game/game';
+import {
+  EmitInit,
+  EmitInvite,
+  EmitInviteConfirm,
+  EmitInviteError,
+  EmitInviteSuccess,
+  Game,
+  GameMode,
+} from 'src/game/game';
 import { GameGateway } from 'src/game/game.gateway';
 
 const GameInviteEvent = {
@@ -91,6 +99,7 @@ export class GameInvitationGateway {
     if (sockets.invitee !== userSocket.id) return this.sendInviteError(userSocket.id, '유효하지 않는 접근입니다.');
 
     const newGame: Game | null = await this.gameConnectGateway.createNewGame(
+      GameMode.MODE_ONE,
       invitation.inviteeId,
       invitation.inviterId,
       sockets.invitee,

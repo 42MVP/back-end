@@ -5,6 +5,7 @@ import { Ball, EmitFinish, EmitInit, Game, GameStatus, Paddle, RenderInfo, defau
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
+import { GameRatingService } from './game-rating/game-rating.service';
 
 @WebSocketGateway()
 export class GameGateway {
@@ -12,6 +13,7 @@ export class GameGateway {
     private readonly gameService: GameService,
     private readonly gameRepository: GameRepository,
     private readonly userStateRepository: UserStateRepository,
+    private readonly gameRatingService: GameRatingService,
   ) {}
 
   @WebSocketServer()
@@ -88,12 +90,13 @@ export class GameGateway {
     this.moveBall(game);
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
-      game.renderInfo = new RenderInfo();
+      game.renderInfo = new RenderInfo(game.gameInfo.backgroundColor);
       if (game.connectInfo.gameStatus === GameStatus.IN_GAME)
         this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
     if (game.connectInfo.gameStatus === GameStatus.GAME_END) {
       clearInterval(game.connectInfo.gameLoopId);
+      await this.gameRatingService.updateGameRating(game);
       const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
       this.leaveGameRoom(game);
