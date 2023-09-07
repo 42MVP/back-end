@@ -103,7 +103,7 @@ export class ChatService {
     return this.getChatRoomDto(newChatUser);
   }
 
-  async enterChatOwner(roomId: number, userId: number) {
+  async createChatOwner(roomId: number, userId: number) {
     const newChatOwner: ChatUser = ChatUser.from(
       roomId,
       userId,
@@ -112,15 +112,15 @@ export class ChatService {
       this.defaultMuteTime,
     );
     const createdOwner = await this.chatUserRepository.save(newChatOwner);
-    await this.joinChatRoom(createdOwner);
+    // await this.joinChatRoom(createdOwner);
     return createdOwner;
   }
-
+  
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     const inviter: User = await this.findExistUser(userId);
     if (!newRoomInfo.userId) throw new BadRequestException('DM need a target user');
     const invitee: User= await this.findExistUser(newRoomInfo.userId);
-
+    
     const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id }});
     const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
     if (blocking) throw new BadRequestException('you blocked DM target user');
@@ -128,12 +128,14 @@ export class ChatService {
     newRoomInfo.roomName = invitee.userName;
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
-    await this.enterChatOwner(newRoom.id, userId);
-    const invitedChatUser: ChatUser = await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
-    this.chatGateway.sendAddedRoom(invitedChatUser.userId, await this.getChatRoomDto(invitedChatUser));
+    const inviteUser: ChatUser = await this.createChatOwner(newRoom.id, userId);
+    const invitedUser: ChatUser = await this.createChatOwner(newRoom.id, newRoomInfo.userId);
+    this.chatGateway.sendAddedRoom(invitedUser.userId, await this.getChatRoomDto(invitedUser));
+    this.joinChatRoom(inviteUser);
+    this.joinChatRoom(invitedUser);
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
-
+  
   async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
     await this.findExistUser(userId);
@@ -143,7 +145,7 @@ export class ChatService {
       newRoomInfo.password = null;
     }
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
-    await this.enterChatOwner(newRoom.id, userId);
+    await this.joinChatRoom(await this.createChatOwner(newRoom.id, userId));
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
