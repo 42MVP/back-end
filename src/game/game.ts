@@ -44,7 +44,7 @@ export class Game {
       backgroundColor: gameMode === GameMode.MODE_ONE ? backGround.gameModeOne : backGround.gameModeTwo,
     };
     this.scoreInfo = new ScoreInfo();
-    this.renderInfo = new RenderInfo();
+    this.renderInfo = new RenderInfo(gameMode === GameMode.MODE_ONE ? backGround.gameModeOne : backGround.gameModeTwo);
     this.resultInfo = new ResultInfo();
   }
 }
@@ -122,11 +122,13 @@ export class ScoreInfo {
 }
 
 export class RenderInfo {
+  background: string;
   leftPaddle: Paddle;
   rightPaddle: Paddle;
   ball: Ball;
 
-  constructor() {
+  constructor(background: string) {
+    this.background = background;
     this.leftPaddle = new Paddle(true);
     this.rightPaddle = new Paddle(false);
     this.ball = new Ball();
