@@ -90,7 +90,7 @@ export class GameGateway {
     this.moveBall(game);
     this.changeBallVector(game);
     if (this.checkWallCollision(game)) {
-      game.renderInfo = new RenderInfo();
+      game.renderInfo = new RenderInfo(game.gameInfo.backgroundColor);
       if (game.connectInfo.gameStatus === GameStatus.IN_GAME)
         this.server.to(game.gameInfo.roomId.toString()).emit('init', new EmitInit(game));
     }
