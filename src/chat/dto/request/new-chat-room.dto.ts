@@ -13,7 +13,7 @@ export class newChatRoomDto {
   password: string;
 
   @IsOptional()
-  dmId: number;
+  userId: number;
 
   public toChatRoomEntity() {
     return ChatRoom.from(this.roomName, this.roomMode, this.password);

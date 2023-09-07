@@ -113,8 +113,8 @@ export class ChatService {
 
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     const inviter: User = await this.findExistUser(userId);
-    if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
-    const invitee: User= await this.findExistUser(newRoomInfo.dmId);
+    if (!newRoomInfo.userId) throw new BadRequestException('DM need a target user');
+    const invitee: User= await this.findExistUser(newRoomInfo.userId);
 
     const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id }});
     const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
@@ -124,7 +124,7 @@ export class ChatService {
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
     await this.enterChatOwner(newRoom.id, userId);
-    await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
+    await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
