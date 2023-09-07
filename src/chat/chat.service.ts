@@ -52,6 +52,11 @@ export class ChatService {
     return chatUserList;
   }
 
+  async findUserName(userId: number) {
+    const user: User = (await this.userRepository.findOne({where: {id: userId}}));
+    return user.userName;
+  }
+
   async getChatRoomDto(execChatUser: ChatUser): Promise<ChatRoomDataDto> {
     const chatRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: execChatUser.roomId } });
     const chatUsers: ChatUser[] = await this.chatUserRepository.find({
@@ -59,7 +64,7 @@ export class ChatService {
     });
     const chatRoomData = new ChatRoomDataDto(
       chatRoom.id,
-      chatRoom.roomName,
+      chatRoom.roomMode === ChatRoomMode.DIRECT ? await this.findUserName(chatUsers[0].userId) : chatRoom.roomName,
       chatRoom.roomMode === ChatRoomMode.DIRECT ? false : true,
       chatRoom.roomMode,
       await this.getChatUserDto(execChatUser),
@@ -98,7 +103,7 @@ export class ChatService {
     return this.getChatRoomDto(newChatUser);
   }
 
-  async enterChatOwner(roomId: number, userId: number): Promise<void> {
+  async enterChatOwner(roomId: number, userId: number) {
     const newChatOwner: ChatUser = ChatUser.from(
       roomId,
       userId,
@@ -108,7 +113,7 @@ export class ChatService {
     );
     const createdOwner = await this.chatUserRepository.save(newChatOwner);
     await this.joinChatRoom(createdOwner);
-    return;
+    return createdOwner;
   }
 
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
@@ -120,11 +125,12 @@ export class ChatService {
     const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
     if (blocking) throw new BadRequestException('you blocked DM target user');
     if (blocked) throw new BadRequestException('you have been blocked by DM target user');
-    newRoomInfo.roomName = null;
+    newRoomInfo.roomName = invitee.userName;
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
     await this.enterChatOwner(newRoom.id, userId);
-    await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
+    const invitedChatUser: ChatUser = await this.enterChatOwner(newRoom.id, newRoomInfo.userId);
+    this.chatGateway.sendAddedRoom(invitedChatUser.userId, await this.getChatRoomDto(invitedChatUser));
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
