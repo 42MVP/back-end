@@ -7,9 +7,10 @@ import { User } from '../common/entities/user.entity';
 import { ChatUser } from '../common/entities/chatuser.entity';
 import { ChatGateway } from './chat.gateway';
 import { RepositoryModule } from '../repository/repository.module';
+import { Block } from 'src/common/entities/block.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ChatRoom, ChatUser, User]), RepositoryModule],
+  imports: [TypeOrmModule.forFeature([ChatRoom, ChatUser, User, Block]), RepositoryModule],
   controllers: [ChatController],
   providers: [ChatService, ChatGateway],
 })
