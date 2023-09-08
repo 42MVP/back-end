@@ -13,8 +13,8 @@ export class GameRatingService {
 
   private k = 42;
 
-  getExpectedScore(rating1: number, rating2: number): number {
-    return (1.0 * 1.0) / (1 + 1.0 * Math.pow(10, (1.0 * (rating1 - rating2)) / 400));
+  getExpectedScore(ratingOp: number, ratingMe: number): number {
+    return (1.0 * 1.0) / (1 + 1.0 * Math.pow(10, (1.0 * (ratingOp - ratingMe)) / 400));
   }
 
   getNewRating(oldRating: number, expectedScore: number, isWin: boolean) {
@@ -25,9 +25,9 @@ export class GameRatingService {
 
   async updateGameRating(game: Game) {
     console.log('=================');
-    const winExpected = this.getExpectedScore(game.resultInfo.win.rating, game.resultInfo.defeat.rating);
+    const winExpected = this.getExpectedScore(game.resultInfo.defeat.rating, game.resultInfo.win.rating);
     console.log('||||||||| EXPECTED SCORE (WIN): ', winExpected);
-    const defeatExpected = this.getExpectedScore(game.resultInfo.defeat.rating, game.resultInfo.win.rating);
+    const defeatExpected = this.getExpectedScore(game.resultInfo.win.rating, game.resultInfo.defeat.rating);
     console.log('||||||||| EXPECTED SCORE (DEFEAT): ', defeatExpected);
 
     console.log('>>>>>>> BEFORE RATING (WIN): ', game.resultInfo.win.rating);
