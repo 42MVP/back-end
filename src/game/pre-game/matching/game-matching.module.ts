@@ -8,7 +8,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/common/entities/user.entity';
 import { GameHistory } from 'src/common/entities/game-history.entity';
 import { GameConnectGateway } from '../game-connect.gateway';
-import { GameRatingService } from 'src/game/game-rating/game-rating.service';
 import { GameHistoryModule } from 'src/game-history/game-history.module';
 import { GameMainModule } from 'src/game/game-main/game-main.module';
 
@@ -21,7 +20,7 @@ import { GameMainModule } from 'src/game/game-main/game-main.module';
     GameHistoryModule,
   ],
   controllers: [GameMatchingController],
-  providers: [GameMatchingGateway, GameMatchingService, GameConnectGateway, GameRatingService],
+  providers: [GameMatchingGateway, GameMatchingService, GameConnectGateway],
   exports: [GameMatchingGateway],
 })
 export class GameMatchingModule {}
