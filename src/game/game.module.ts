@@ -8,9 +8,10 @@ import { RepositoryModule } from 'src/repository/repository.module';
 import { GameController } from './game.controller';
 import { User } from 'src/common/entities/user.entity';
 import { GameRatingService } from './game-rating/game-rating.service';
+import { GameMainModule } from './game-main/game-main.module';
 
 @Module({
-  imports: [PreGameModule, TypeOrmModule.forFeature([GameHistory, User]), RepositoryModule],
+  imports: [PreGameModule, TypeOrmModule.forFeature([GameHistory, User]), RepositoryModule, GameMainModule],
   providers: [GameGateway, GameService, GameRatingService],
   controllers: [GameController],
 })
