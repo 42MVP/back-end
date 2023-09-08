@@ -16,7 +16,7 @@ export class FriendController {
     const userList: User[] = await this.friendService.getFriendsList(id);
     const userResponseList: UserResponseBaseDto[] = userList.map(user => new UserResponseBaseDto(user));
 
-    this.friendService.addFriendsConnectionState(userResponseList);
+    this.friendService.addConnectionState(userResponseList);
 
     return userResponseList;
   }
