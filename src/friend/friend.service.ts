@@ -24,7 +24,14 @@ export class FriendService {
       .getMany();
   }
 
-  addFriendsConnectionState(userResponseList: UserResponseBaseDto[]): void {
+  async getFollowersList(id: number): Promise<User[]> {
+    return await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect(Friendship, 'friendship', 'friendship.to_id = user.id')
+      .getMany();
+  }
+
+  addConnectionState(userResponseList: UserResponseBaseDto[]): void {
     for (const userResponse of userResponseList) {
       const state: UserState = this.userStateRepository.find(userResponse.id);
       userResponse.updateState(userStateToString(state));

@@ -5,6 +5,8 @@ import { User } from '../common/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { DeleteResult, Repository } from 'typeorm';
 import { Friendship } from 'src/common/entities/friendship.entity';
+import { UserResponseBaseDto } from 'src/user/dto/user-response-base.dto';
+import { UserState, UserStateRepository, userStateToString } from 'src/repository/user-state.repository';
 
 @Injectable()
 export class BlockService {
@@ -15,6 +17,7 @@ export class BlockService {
     private userRepository: Repository<User>,
     @InjectRepository(Friendship)
     private friendshipRepository: Repository<Friendship>,
+    private readonly userStateRepository: UserStateRepository,
     private userService: UserService,
   ) {}
 
@@ -24,6 +27,13 @@ export class BlockService {
       .leftJoinAndSelect(Block, 'block', 'block.to_id = user.id')
       .where('block.from_id = :user_id', { user_id: id })
       .getMany();
+  }
+
+    addConnectionState(userResponseList: UserResponseBaseDto[]): void {
+    for (const userResponse of userResponseList) {
+      const state: UserState = this.userStateRepository.find(userResponse.id);
+      userResponse.updateState(userStateToString(state));
+    }
   }
 
   async addBlockList(from: number, to: number): Promise<void> {
