@@ -29,7 +29,7 @@ export class GameInvitationService {
     const isSuccess = this.gameInvitationGateway.sendInvite(
       {
         id: inviter.id,
-        avatarUrl: '',
+        avatarUrl: inviter.avatar,
         userName: inviter.userName,
       },
       invitationId,
