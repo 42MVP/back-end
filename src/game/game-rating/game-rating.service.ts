@@ -17,6 +17,12 @@ export class GameRatingService {
     return (1.0 * 1.0) / (1 + 1.0 * Math.pow(10, (1.0 * (rating1 - rating2)) / 400));
   }
 
+  getNewRating(oldRating: number, expectedScore: number, isWin: boolean) {
+    return isWin
+      ? Math.round(oldRating + this.k * (1 - expectedScore))
+      : Math.round(oldRating + this.k * (0 - expectedScore));
+  }
+
   async updateGameRating(game: Game) {
     console.log('=================');
     const winExpected = this.getExpectedScore(game.resultInfo.win.rating, game.resultInfo.defeat.rating);
@@ -26,12 +32,18 @@ export class GameRatingService {
 
     console.log('>>>>>>> BEFORE RATING (WIN): ', game.resultInfo.win.rating);
     console.log('>>>>>>> BEFORE RATING (DEFEAT): ', game.resultInfo.defeat.rating);
-    game.resultInfo.win.rating = Math.round(game.resultInfo.win.rating + this.k * (1 - winExpected));
-    game.resultInfo.defeat.rating = Math.round(game.resultInfo.defeat.rating + this.k * (0 - defeatExpected));
-    console.log(`>>>>>>>    new Rating for win: ${game.resultInfo.win.rating}`);
-    console.log(`>>>>>>>    new Rating for defeat: ${game.resultInfo.defeat.rating}`);
+    console.log(`>>>>>>> Rating for win: ${this.getNewRating(game.resultInfo.win.rating, winExpected, true)}`);
+    console.log(
+      `>>>>>>> Rating for defeat: ${this.getNewRating(game.resultInfo.defeat.rating, defeatExpected, false)}`,
+    );
     console.log('=================');
-    await this.userRepository.update({ id: game.resultInfo.win.userId }, { rating: game.resultInfo.win.rating });
-    await this.userRepository.update({ id: game.resultInfo.defeat.userId }, { rating: game.resultInfo.defeat.rating });
+    await this.userRepository.update(
+      { id: game.resultInfo.win.userId },
+      { rating: this.getNewRating(game.resultInfo.win.rating, winExpected, true) },
+    );
+    await this.userRepository.update(
+      { id: game.resultInfo.defeat.userId },
+      { rating: this.getNewRating(game.resultInfo.defeat.rating, defeatExpected, false) },
+    );
   }
 }
