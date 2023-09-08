@@ -18,6 +18,7 @@ import { ChatUserDto } from './dto/response/chat-user.dto';
 import { ChatRoomDto } from './dto/response/chat-room.dto';
 import { ChangedUserRoleDto } from './dto/response/changed-user-role.dto';
 import * as bcrypt from 'bcrypt';
+import { Block } from 'src/common/entities/block.entity';
 
 @Injectable()
 export class ChatService {
@@ -28,6 +29,8 @@ export class ChatService {
     private chatUserRepository: Repository<ChatUser>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Block)
+    private blockRepository: Repository<Block>,
     private muteTimeRepository: MuteTimeRepository,
     private chatGateway: ChatGateway,
   ) {}
@@ -49,6 +52,11 @@ export class ChatService {
     return chatUserList;
   }
 
+  async findUserName(userId: number) {
+    const user: User = (await this.userRepository.findOne({where: {id: userId}}));
+    return user.userName;
+  }
+
   async getChatRoomDto(execChatUser: ChatUser): Promise<ChatRoomDataDto> {
     const chatRoom: ChatRoom = await this.chatRoomRepository.findOne({ where: { id: execChatUser.roomId } });
     const chatUsers: ChatUser[] = await this.chatUserRepository.find({
@@ -56,7 +64,7 @@ export class ChatService {
     });
     const chatRoomData = new ChatRoomDataDto(
       chatRoom.id,
-      chatRoom.roomName,
+      chatRoom.roomMode === ChatRoomMode.DIRECT ? await this.findUserName(chatUsers[0].userId) : chatRoom.roomName,
       chatRoom.roomMode === ChatRoomMode.DIRECT ? false : true,
       chatRoom.roomMode,
       await this.getChatUserDto(execChatUser),
@@ -95,7 +103,7 @@ export class ChatService {
     return this.getChatRoomDto(newChatUser);
   }
 
-  async enterChatOwner(roomId: number, userId: number): Promise<void> {
+  async createChatOwner(roomId: number, userId: number) {
     const newChatOwner: ChatUser = ChatUser.from(
       roomId,
       userId,
@@ -104,22 +112,30 @@ export class ChatService {
       this.defaultMuteTime,
     );
     const createdOwner = await this.chatUserRepository.save(newChatOwner);
-    await this.joinChatRoom(createdOwner);
-    return;
+    // await this.joinChatRoom(createdOwner);
+    return createdOwner;
   }
-
+  
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
-    await this.findExistUser(userId);
-    if (!newRoomInfo.dmId) throw new BadRequestException('DM need a target user');
-    await this.findExistUser(newRoomInfo.dmId);
-    newRoomInfo.roomName = null;
+    const inviter: User = await this.findExistUser(userId);
+    if (!newRoomInfo.userId) throw new BadRequestException('DM need a target user');
+    const invitee: User= await this.findExistUser(newRoomInfo.userId);
+    
+    const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id }});
+    const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
+    if (blocking) throw new BadRequestException('you blocked DM target user');
+    if (blocked) throw new BadRequestException('you have been blocked by DM target user');
+    newRoomInfo.roomName = invitee.userName;
     newRoomInfo.password = null;
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
-    await this.enterChatOwner(newRoom.id, userId);
-    await this.enterChatOwner(newRoom.id, newRoomInfo.dmId);
+    const inviteUser: ChatUser = await this.createChatOwner(newRoom.id, userId);
+    const invitedUser: ChatUser = await this.createChatOwner(newRoom.id, newRoomInfo.userId);
+    this.chatGateway.sendAddedRoom(invitedUser.userId, await this.getChatRoomDto(invitedUser));
+    this.joinChatRoom(inviteUser);
+    this.joinChatRoom(invitedUser);
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
-
+  
   async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
     await this.findExistUser(userId);
@@ -129,7 +145,7 @@ export class ChatService {
       newRoomInfo.password = null;
     }
     const newRoom = await this.chatRoomRepository.save(newRoomInfo.toChatRoomEntity());
-    await this.enterChatOwner(newRoom.id, userId);
+    await this.joinChatRoom(await this.createChatOwner(newRoom.id, userId));
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
 
