@@ -7,21 +7,14 @@ import { GameInvitationGateway } from './game-invitation.gateway';
 import { GameInvitationService } from './game-invitation.service';
 import { GameHistory } from 'src/common/entities/game-history.entity';
 import { GameGateway } from 'src/game/game.gateway';
-import { GameService } from 'src/game/game.service';
 import { GameConnectGateway } from '../game-connect.gateway';
 import { GameRatingService } from 'src/game/game-rating/game-rating.service';
+import { GameHistoryModule } from 'src/game-history/game-history.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, GameHistory]), RepositoryModule],
+  imports: [TypeOrmModule.forFeature([User, GameHistory]), RepositoryModule, GameHistoryModule],
   controllers: [GameInvitationController],
-  providers: [
-    GameInvitationService,
-    GameInvitationGateway,
-    GameGateway,
-    GameService,
-    GameConnectGateway,
-    GameRatingService,
-  ],
+  providers: [GameInvitationService, GameInvitationGateway, GameGateway, GameConnectGateway, GameRatingService],
   exports: [GameInvitationGateway],
 })
 export class GameInvitationModule {}

@@ -1,16 +1,16 @@
 import { ConnectedSocket, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { GameService } from './game.service';
 import { Ball, EmitFinish, EmitInit, Game, GameStatus, Paddle, RenderInfo, defaultSetting } from './game';
 import { GameRepository } from 'src/repository/game.repository';
 import { clearInterval } from 'timers';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameRatingService } from './game-rating/game-rating.service';
+import { GameHistoryService } from 'src/game-history/game-history.service';
 
 @WebSocketGateway()
 export class GameGateway {
   constructor(
-    private readonly gameService: GameService,
+    private readonly gameHistoryService: GameHistoryService,
     private readonly gameRepository: GameRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameRatingService: GameRatingService,
@@ -97,7 +97,7 @@ export class GameGateway {
     if (game.connectInfo.gameStatus === GameStatus.GAME_END) {
       clearInterval(game.connectInfo.gameLoopId);
       await this.gameRatingService.updateGameRating(game);
-      const finishData: EmitFinish = new EmitFinish(await this.gameService.updateGameHistory(game));
+      const finishData: EmitFinish = new EmitFinish(await this.gameHistoryService.updateGameHistory(game));
       this.server.to(game.gameInfo.roomId.toString()).emit('finish', finishData);
       this.leaveGameRoom(game);
     } else {
