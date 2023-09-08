@@ -10,6 +10,7 @@ import { UserService } from '../user/user.service';
 import { AuthCodeDto } from './dto/auth-code.dto';
 import { TwoFactorAuthGuard } from '../auth/two-factor/two-factor-auth.guard';
 import { ExtractId } from 'src/common/decorators/extract-id.decorator';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 export class LoginController {
@@ -17,6 +18,7 @@ export class LoginController {
     private readonly loginService: LoginService,
     private readonly authService: AuthService,
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('login')
@@ -34,17 +36,18 @@ export class LoginController {
   @Get('login/redirect')
   @UseGuards(FtAuthGuard)
   async ftLoginRedirect(@ExtractUser() user: User, @Res() res: Response): Promise<void> {
+    const frontEndUri = this.configService.get<string>('FRONTEND_URI');
     if (user.isRegister) {
       if (user.isAuth) {
         const twoFactorToken = await this.authService.getTwoFactorToken(user.id);
         await this.authService.sendTwoFactorMail(user.email, user.id);
-        res.redirect(`http://localhost:5173/signIn/2fa-auth?token=${twoFactorToken}`);
+        res.redirect(`http://${frontEndUri}/signIn/2fa-auth?token=${twoFactorToken}`);
       } else {
         const jwtToken = await this.authService.getJwtToken(user.id);
         await this.userService.updateRefreshToken(user.id, jwtToken.refreshToken);
         res
           .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
-          .redirect(`http://localhost:5173/signin/oauth?token=${jwtToken.accessToken}`);
+          .redirect(`http://${frontEndUri}/signin/oauth?token=${jwtToken.accessToken}`);
       }
     } else {
       const registedUserId = await this.loginService.register(user);
@@ -52,7 +55,7 @@ export class LoginController {
       await this.userService.updateRefreshToken(registedUserId, jwtToken.refreshToken);
       res
         .cookie('RefreshToken', jwtToken.refreshToken, { httpOnly: true })
-        .redirect(`http://localhost:5173/signup/setprofile?name=${user.userName}&token=${jwtToken.accessToken}`);
+        .redirect(`http://${frontEndUri}/signup/setprofile?name=${user.userName}&token=${jwtToken.accessToken}`);
     }
   }
 
