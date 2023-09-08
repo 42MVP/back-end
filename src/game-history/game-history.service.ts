@@ -23,8 +23,8 @@ export class GameHistoryService {
   async updateGameHistory(game: Game): Promise<number> {
     const win: User = await this.userRepository.findOne({ where: { id: game.resultInfo.win.userId } });
     const defeat: User = await this.userRepository.findOne({ where: { id: game.resultInfo.defeat.userId } });
-    win.winNum += 1;
-    defeat.loseNum += 1;
+    await this.userRepository.update({ id: win.id }, { winNum: win.winNum + 1 });
+    await this.userRepository.update({ id: defeat.id }, { loseNum: defeat.loseNum + 1 });
     const newRecord: GameHistory = await this.gameHistoryRepository.save(
       new GameHistory(
         game.resultInfo.win.userId,
