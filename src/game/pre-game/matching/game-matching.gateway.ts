@@ -2,13 +2,10 @@ import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, Conne
 import { Server, Socket } from 'socket.io';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { Matching, MatchingAcceptUser, MatchingRepository } from 'src/repository/matching.repository';
-import { Repository } from 'typeorm';
-import { User } from 'src/common/entities/user.entity';
-import { InjectRepository } from '@nestjs/typeorm';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { EmitConfirm, EmitInit, EmitMatched, Game } from 'src/game/game';
 import { GameConnectGateway } from '../game-connect.gateway';
-import { GameGateway } from 'src/game/game.gateway';
+import { GameMainGateway } from 'src/game/game-main/game-main.gateway';
 
 const GameMatchingEvent = {
   matched: 'matched',
@@ -51,7 +48,7 @@ export class GameMatchingGateway {
     private readonly matchingRepository: MatchingRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
-    private readonly gameGateway: GameGateway,
+    private readonly gameMainGateway: GameMainGateway,
   ) {}
 
   @WebSocketServer()
@@ -131,7 +128,7 @@ export class GameMatchingGateway {
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
       this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
-      await this.gameGateway.waitForGamePlayers(newGame);
+      await this.gameMainGateway.waitForGamePlayers(newGame);
     }
   }
 
