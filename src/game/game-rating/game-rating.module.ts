@@ -7,5 +7,6 @@ import { User } from 'src/common/entities/user.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([GameHistory, User])],
   providers: [GameRatingService],
+  exports: [GameRatingService],
 })
 export class GameRatingModule {}

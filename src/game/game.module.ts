@@ -7,6 +7,7 @@ import { User } from 'src/common/entities/user.entity';
 import { GameRatingService } from './game-rating/game-rating.service';
 import { GameMainModule } from './game-main/game-main.module';
 import { GameHistoryModule } from 'src/game-history/game-history.module';
+import { GameRatingModule } from './game-rating/game-rating.module';
 
 @Module({
   imports: [
@@ -14,8 +15,8 @@ import { GameHistoryModule } from 'src/game-history/game-history.module';
     TypeOrmModule.forFeature([GameHistory, User]),
     RepositoryModule,
     GameMainModule,
+    GameRatingModule,
     GameHistoryModule,
   ],
-  providers: [GameRatingService],
 })
 export class GameModule {}
