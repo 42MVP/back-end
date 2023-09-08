@@ -15,6 +15,8 @@ export class BlockController {
   async getBlockList(@ExtractId() id: number): Promise<UserResponseBaseDto[]> {
     const userList: User[] = await this.blockService.getBlockList(id);
     const userResponseList: UserResponseBaseDto[] = userList.map(user => new UserResponseBaseDto(user));
+    this.blockService.addConnectionState(userResponseList);
+
     return userResponseList;
   }
 

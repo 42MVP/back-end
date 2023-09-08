@@ -21,7 +21,7 @@ export class FriendGateway extends Observer {
   async update() {
     const changedUser: { id: number; state: UserState } = this.userStateRepository.getResentChangedUser();
     try {
-      const friends: User[] = await this.friendService.getFriendsList(changedUser.id);
+      const friends: User[] = await this.friendService.getFollowersList(changedUser.id);
       for (const friend of friends) {
         const friendId = friend.id;
         const state: UserState = this.userStateRepository.find(friendId);
