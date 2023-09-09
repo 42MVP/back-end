@@ -15,11 +15,6 @@ export class GameHistoryService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // async createGameHistory(winnerId: number, loserId: number, winnerScore: number, loserScore: number): Promise<void> {
-  //   const gameHistory: GameHistory = new GameHistory(winnerId, loserId, winnerScore, loserScore);
-  //   await this.gameHistoryRepository.save(gameHistory);
-  // }
-
   async updateGameHistory(game: Game): Promise<number> {
     const win: User = await this.userRepository.findOne({ where: { id: game.resultInfo.win.userId } });
     const defeat: User = await this.userRepository.findOne({ where: { id: game.resultInfo.defeat.userId } });

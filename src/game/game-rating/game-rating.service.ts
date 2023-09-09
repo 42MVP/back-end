@@ -24,19 +24,9 @@ export class GameRatingService {
   }
 
   async updateGameRating(game: Game) {
-    console.log('=================');
     const winExpected = this.getExpectedScore(game.resultInfo.defeat.rating, game.resultInfo.win.rating);
-    console.log('||||||||| EXPECTED SCORE (WIN): ', winExpected);
     const defeatExpected = this.getExpectedScore(game.resultInfo.win.rating, game.resultInfo.defeat.rating);
-    console.log('||||||||| EXPECTED SCORE (DEFEAT): ', defeatExpected);
 
-    console.log('>>>>>>> BEFORE RATING (WIN): ', game.resultInfo.win.rating);
-    console.log('>>>>>>> BEFORE RATING (DEFEAT): ', game.resultInfo.defeat.rating);
-    console.log(`>>>>>>> Rating for win: ${this.getNewRating(game.resultInfo.win.rating, winExpected, true)}`);
-    console.log(
-      `>>>>>>> Rating for defeat: ${this.getNewRating(game.resultInfo.defeat.rating, defeatExpected, false)}`,
-    );
-    console.log('=================');
     await this.userRepository.update(
       { id: game.resultInfo.win.userId },
       { rating: this.getNewRating(game.resultInfo.win.rating, winExpected, true) },

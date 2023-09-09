@@ -7,7 +7,6 @@ import { GameMatchingGateway } from './matching/game-matching.gateway';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameMode } from '../game';
-import { GameRatingService } from '../game-rating/game-rating.service';
 
 @Injectable()
 export class GameIntervalService {
@@ -18,7 +17,6 @@ export class GameIntervalService {
     private readonly userStateRepository: UserStateRepository,
     private readonly gameMatchingGateway: GameMatchingGateway,
     private readonly gameInvitationGateway: GameInvitationGateway,
-    private readonly gameRatingService: GameRatingService,
   ) {}
 
   @Interval(5000)
@@ -32,20 +30,12 @@ export class GameIntervalService {
   }
 
   matchMaking(): void {
-    const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
-    const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
-    // let user2: Record<number, number> = undefined;
+    const queue: Array<Map<rating, userId>> = this.queueRepository.findAll();
 
-    console.log('queue: ', queue);
-
-    for (const [userId, rating] of queue) {
-      console.log('IN MODE ONE QUEUE: target Rate: ', rating, 'id: ', userId);
-      if (this.isMatchSuitable({ rating, userId }, queue, GameMode.MODE_ONE)) break;
-    }
-
-    for (const [userId, rating] of queue2) {
-      console.log('IN MODE TWO QUEUE: target Rate: ', rating, 'id: ', userId);
-      if (this.isMatchSuitable({ rating, userId }, queue2, GameMode.MODE_TWO)) break;
+    for (let gameMode: GameMode = GameMode.DEFAULT; gameMode < 4; gameMode++) {
+      for (const [userId, rating] of queue[gameMode]) {
+        if (this.isMatchSuitable({ rating, userId }, queue[gameMode], gameMode)) break;
+      }
     }
   }
 
@@ -55,7 +45,6 @@ export class GameIntervalService {
     for (const [userId, rating] of queue) {
       if (userId === target.userId) continue;
       const ratingDiff: number = target.rating - rating;
-      console.log('>>>>>>>>>>>>>>> rating Diff: ', ratingDiff);
       if (Math.abs(ratingDiff) <= 200) {
         this.makeMatching(userId, target.userId, gameMode);
         return true;
@@ -71,10 +60,6 @@ export class GameIntervalService {
   }
 
   makeMatching(user1Id: number, user2Id: number, gameMode: GameMode): void {
-    console.log(`Matched==========`);
-    console.log(`User1: ${user1Id}`);
-    console.log(`User2: ${user2Id}`);
-
     this.queueRepository.delete(user1Id);
     this.queueRepository.delete(user2Id);
     this.userStateRepository.update(user1Id, UserState.IN_MATCHING);
@@ -93,8 +78,6 @@ export class GameIntervalService {
 
   removeExpiredMatching(): void {
     const matchings: Map<number, Matching> = this.matchingRepository.findAll();
-
-    console.log('matchings: ', matchings);
 
     matchings.forEach((value: Matching, key: number) => {
       if (new Date().getTime() > value.expiredTime) {
@@ -118,7 +101,6 @@ export class GameIntervalService {
   removeExpiredInvitation(): void {
     const invitations: Map<number, Invitation> = this.invitationRepository.findAll();
 
-    console.log('invitation: ', invitations);
     invitations.forEach((value: Invitation, key: number) => {
       if (new Date().getTime() > value.expiredTime) {
         this.gameInvitationGateway.sendInviteTimeout(value);

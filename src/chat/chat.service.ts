@@ -114,7 +114,6 @@ export class ChatService {
       this.defaultMuteTime,
     );
     const createdOwner = await this.chatUserRepository.save(newChatOwner);
-    // await this.joinChatRoom(createdOwner);
     return createdOwner;
   }
 
@@ -191,14 +190,15 @@ export class ChatService {
 
   async changeChatRoomInfo(userId: number, changeRoomInfo: ChangeChatRoomDto) {
     const targetRoom = await this.findExistChatRoom(changeRoomInfo.roomId);
-    await this.isValidChatRoomToChage(targetRoom.id);
+    await this.isValidChatRoomToChange(targetRoom.id);
     const execUser = await this.findExistChatUser(changeRoomInfo.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     if (changeRoomInfo.roomMode) targetRoom.roomMode = changeRoomInfo.roomMode;
     if (changeRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (typeof changeRoomInfo.password !== 'string')
         throw new BadRequestException('Need a password for protected room');
-      targetRoom.password = changeRoomInfo.password;
+      const salt = bcrypt.genSaltSync();
+      targetRoom.password = bcrypt.hashSync(changeRoomInfo.password, salt);
     }
     if (changeRoomInfo.roomMode !== ChatRoomMode.PROTECTED) {
       targetRoom.password = null;
@@ -212,7 +212,7 @@ export class ChatService {
     this.checkChatUserAuthority(execUser, ChatRole.OWNER);
     const targetUser = await this.findExistChatUser(newChatRole.roomId, newChatRole.userId);
     this.isValidChatUserToChange(targetUser);
-    await this.isValidChatRoomToChage(newChatRole.roomId);
+    await this.isValidChatRoomToChange(newChatRole.roomId);
     targetUser.role = newChatRole.role;
     await this.chatUserRepository.save(targetUser);
     const changedRole: ChangedUserRoleDto = new ChangedUserRoleDto();
@@ -278,7 +278,7 @@ export class ChatService {
   async changeChatUserStatus(userId: number, newChatStatus: UpdateChatStatusDto) {
     const execUser = await this.findExistChatUser(newChatStatus.roomId, userId);
     this.checkChatUserAuthority(execUser, ChatRole.ADMIN);
-    await this.isValidChatRoomToChage(newChatStatus.roomId);
+    await this.isValidChatRoomToChange(newChatStatus.roomId);
 
     const targetRoomId = execUser.roomId;
     const targetUserId = newChatStatus.userId;
@@ -443,7 +443,7 @@ export class ChatService {
    * parameter로 들어온 채팅방 id가 정보 변경이 불가능한 DM방인 경우 BadRequestException을 던집니다.
    * @param roomId API의 타겟이 되는 채팅방 id
    */
-  async isValidChatRoomToChage(roomId: number) {
+  async isValidChatRoomToChange(roomId: number) {
     const targetRoom = await this.chatRoomRepository.findOne({ where: { id: roomId } });
     if (targetRoom.roomMode === ChatRoomMode.DIRECT) throw new BadRequestException('Can not change DM channel');
   }

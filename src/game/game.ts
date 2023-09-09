@@ -8,8 +8,10 @@ export enum GameStatus {
 }
 
 export enum GameMode {
-  MODE_ONE = 1,
-  MODE_TWO = 2,
+  EMPTY = 0,
+  DEFAULT = 1,
+  MODE_ONE = 2,
+  MODE_TWO = 3,
 }
 
 export const defaultSetting: GameSetting = {
@@ -23,9 +25,11 @@ export const defaultSetting: GameSetting = {
   ballSpeed: 1,
 };
 
-const backGround = {
-  gameModeOne: 'black',
-  gameModeTwo: 'pink',
+const ModeColor = {
+  0: '#ffffff',
+  1: '#ffffff',
+  2: '#b0b0b0',
+  3: '#d8b1a3',
 };
 
 export class Game {
@@ -36,15 +40,16 @@ export class Game {
   resultInfo: ResultInfo;
 
   constructor(gameMode: GameMode, user1: GameUser, user2: GameUser) {
+    console.log(gameMode, ModeColor[gameMode]);
     this.connectInfo = new ConnectInfo();
     this.gameInfo = {
       roomId: 0,
       leftUser: user1,
       rightUser: user2,
-      backgroundColor: gameMode === GameMode.MODE_ONE ? backGround.gameModeOne : backGround.gameModeTwo,
+      backgroundColor: ModeColor[gameMode],
     };
     this.scoreInfo = new ScoreInfo();
-    this.renderInfo = new RenderInfo(gameMode === GameMode.MODE_ONE ? backGround.gameModeOne : backGround.gameModeTwo);
+    this.renderInfo = new RenderInfo(ModeColor[gameMode]);
     this.resultInfo = new ResultInfo();
   }
 }
