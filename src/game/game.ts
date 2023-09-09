@@ -8,9 +8,10 @@ export enum GameStatus {
 }
 
 export enum GameMode {
-  DEFAULT = 0,
-  MODE_ONE = 1,
-  MODE_TWO = 2,
+  EMPTY = 0,
+  DEFAULT = 1,
+  MODE_ONE = 2,
+  MODE_TWO = 3,
 }
 
 export const defaultSetting: GameSetting = {
@@ -25,9 +26,10 @@ export const defaultSetting: GameSetting = {
 };
 
 const ModeColor = {
-  0: 'ffffff',
-  1: 'b0b0b0',
-  2: 'd8b1a3',
+  0: '#ffffff',
+  1: '#ffffff',
+  2: '#b0b0b0',
+  3: '#d8b1a3',
 };
 
 export class Game {
@@ -38,6 +40,7 @@ export class Game {
   resultInfo: ResultInfo;
 
   constructor(gameMode: GameMode, user1: GameUser, user2: GameUser) {
+    console.log(gameMode, ModeColor[gameMode]);
     this.connectInfo = new ConnectInfo();
     this.gameInfo = {
       roomId: 0,

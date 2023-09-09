@@ -7,7 +7,6 @@ import { GameMatchingGateway } from './matching/game-matching.gateway';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
 import { GameMode } from '../game';
-import { GameRatingService } from '../game-rating/game-rating.service';
 
 @Injectable()
 export class GameIntervalService {
@@ -18,7 +17,6 @@ export class GameIntervalService {
     private readonly userStateRepository: UserStateRepository,
     private readonly gameMatchingGateway: GameMatchingGateway,
     private readonly gameInvitationGateway: GameInvitationGateway,
-    private readonly gameRatingService: GameRatingService,
   ) {}
 
   @Interval(5000)
@@ -32,30 +30,14 @@ export class GameIntervalService {
   }
 
   matchMaking(): void {
-    const queue: Map<rating, userId>[] = this.queueRepository.findAll();
+    const queue: Array<Map<rating, userId>> = this.queueRepository.findAll();
 
-    console.log('queue: ', queue);
-
-    let gameMode: GameMode = GameMode.DEFAULT;
-    for (const modeQueue of queue) {
-      for (const [userId, rating] of modeQueue) {
+    for (let gameMode: GameMode = GameMode.DEFAULT; gameMode < 4; gameMode++) {
+      for (const [userId, rating] of queue[gameMode]) {
         console.log('IN MODE [', gameMode, '] QUEUE: target Rate: ', rating, 'id: ', userId);
-        if (this.isMatchSuitable({ rating, userId }, modeQueue, gameMode)) break;
+        if (this.isMatchSuitable({ rating, userId }, queue[gameMode], gameMode)) break;
       }
-      gameMode++;
     }
-    // const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
-    // const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
-    // // let user2: Record<number, number> = undefined;
-
-    // for (const [userId, rating] of queue) {
-    //   if (this.isMatchSuitable({ rating, userId }, queue, GameMode.MODE_ONE)) break;
-    // }
-
-    // for (const [userId, rating] of queue2) {
-    //   console.log('IN MODE TWO QUEUE: target Rate: ', rating, 'id: ', userId);
-    //   if (this.isMatchSuitable({ rating, userId }, queue2, GameMode.MODE_TWO)) break;
-    // }
   }
 
   isMatchSuitable(target: { rating: number; userId: number }, queue: Map<rating, userId>, gameMode: GameMode): boolean {

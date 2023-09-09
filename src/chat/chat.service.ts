@@ -198,7 +198,9 @@ export class ChatService {
     if (changeRoomInfo.roomMode === ChatRoomMode.PROTECTED) {
       if (typeof changeRoomInfo.password !== 'string')
         throw new BadRequestException('Need a password for protected room');
-      targetRoom.password = changeRoomInfo.password;
+      const salt = bcrypt.genSaltSync();
+      targetRoom.password = bcrypt.hashSync(changeRoomInfo.password, salt);
+
     }
     if (changeRoomInfo.roomMode !== ChatRoomMode.PROTECTED) {
       targetRoom.password = null;
