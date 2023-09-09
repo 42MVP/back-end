@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ChatUser } from 'src/common/entities/chatuser.entity';
-import { Repository } from 'typeorm';
+import { ChatUserStatus } from 'src/common/enums';
+import { Not, Repository } from 'typeorm';
 
 @Injectable()
 export class ConnectionService {
@@ -14,6 +15,7 @@ export class ConnectionService {
     const ret: ChatUser[] = await this.chatUserRepository.find({
       where: {
         userId: userId,
+        status: Not(ChatUserStatus.BAN),
       },
     });
     return ret.map(e => {
