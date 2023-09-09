@@ -34,7 +34,7 @@ export class User extends BaseEntity {
   @Column({ type: 'int', default: 0 })
   loseNum: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'int', default: 1000 })
   rating: number;
 
   @OneToMany(() => UserAchievement, userAchievement => userAchievement.user)

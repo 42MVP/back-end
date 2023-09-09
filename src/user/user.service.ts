@@ -48,7 +48,7 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
-    user.gameHistories = await this.gameHistoryService.getGameHistry(id);
+    user.gameHistories = await this.gameHistoryService.getGameHistory(id);
     user.achievements = await this.userAchievementService.getAchievement(id);
     return user;
   }
@@ -70,7 +70,7 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('해당 유저가 존재하지 않습니다!');
     }
-    user.gameHistories = await this.gameHistoryService.getGameHistry(user.id);
+    user.gameHistories = await this.gameHistoryService.getGameHistory(user.id);
     user.achievements = await this.userAchievementService.getAchievement(user.id);
     return user;
   }
