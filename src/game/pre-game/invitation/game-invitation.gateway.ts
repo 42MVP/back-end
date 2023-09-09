@@ -1,7 +1,5 @@
-import { InjectRepository } from '@nestjs/typeorm';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { User } from 'src/common/entities/user.entity';
 import { Invitation, InvitationRepository } from 'src/repository/invitation.repository';
 import { UserSocketRepository } from 'src/repository/user-socket.repository';
 import { UserState, UserStateRepository } from 'src/repository/user-state.repository';
@@ -15,7 +13,7 @@ import {
   Game,
   GameMode,
 } from 'src/game/game';
-import { GameGateway } from 'src/game/game.gateway';
+import { GameMainGateway } from 'src/game/game-main/game-main.gateway';
 
 const GameInviteEvent = {
   invite: 'invite',
@@ -61,7 +59,7 @@ export class GameInvitationGateway {
     private readonly userSocketRepository: UserSocketRepository,
     private readonly userStateRepository: UserStateRepository,
     private readonly gameConnectGateway: GameConnectGateway,
-    private readonly gameGateway: GameGateway,
+    private readonly gameMainGateway: GameMainGateway,
   ) {}
 
   @WebSocketServer()
@@ -116,7 +114,7 @@ export class GameInvitationGateway {
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
       this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));
-      await this.gameGateway.waitForGamePlayers(newGame);
+      await this.gameMainGateway.waitForGamePlayers(newGame);
     }
   }
 
