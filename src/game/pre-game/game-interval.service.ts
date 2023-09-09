@@ -34,7 +34,6 @@ export class GameIntervalService {
 
     for (let gameMode: GameMode = GameMode.DEFAULT; gameMode < 4; gameMode++) {
       for (const [userId, rating] of queue[gameMode]) {
-        console.log('IN MODE [', gameMode, '] QUEUE: target Rate: ', rating, 'id: ', userId);
         if (this.isMatchSuitable({ rating, userId }, queue[gameMode], gameMode)) break;
       }
     }
@@ -46,7 +45,6 @@ export class GameIntervalService {
     for (const [userId, rating] of queue) {
       if (userId === target.userId) continue;
       const ratingDiff: number = target.rating - rating;
-      console.log('>>>>>>>>>>>>>>> rating Diff: ', ratingDiff);
       if (Math.abs(ratingDiff) <= 200) {
         this.makeMatching(userId, target.userId, gameMode);
         return true;
@@ -62,10 +60,6 @@ export class GameIntervalService {
   }
 
   makeMatching(user1Id: number, user2Id: number, gameMode: GameMode): void {
-    console.log(`Matched==========`);
-    console.log(`User1: ${user1Id}`);
-    console.log(`User2: ${user2Id}`);
-
     this.queueRepository.delete(user1Id);
     this.queueRepository.delete(user2Id);
     this.userStateRepository.update(user1Id, UserState.IN_MATCHING);
@@ -84,8 +78,6 @@ export class GameIntervalService {
 
   removeExpiredMatching(): void {
     const matchings: Map<number, Matching> = this.matchingRepository.findAll();
-
-    console.log('matchings: ', matchings);
 
     matchings.forEach((value: Matching, key: number) => {
       if (new Date().getTime() > value.expiredTime) {
@@ -109,7 +101,6 @@ export class GameIntervalService {
   removeExpiredInvitation(): void {
     const invitations: Map<number, Invitation> = this.invitationRepository.findAll();
 
-    console.log('invitation: ', invitations);
     invitations.forEach((value: Invitation, key: number) => {
       if (new Date().getTime() > value.expiredTime) {
         this.gameInvitationGateway.sendInviteTimeout(value);

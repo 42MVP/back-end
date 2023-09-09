@@ -106,8 +106,6 @@ export class GameMatchingGateway {
       return;
     }
 
-    // 매칭 성공 메세지 보내기
-    console.log("matching gateway >>>>>>>> ", matching.gameMode);
     const newGame: Game | null = await this.gameConnectGateway.createNewGame(
       matching.gameMode,
       matching.user1Id,
@@ -115,16 +113,14 @@ export class GameMatchingGateway {
       sockets.user1,
       sockets.user2,
     );
-    const confirmData: EmitConfirm = new EmitConfirm(newGame); // newGame ? Game.result == true:  Game.result == false;
+    const confirmData: EmitConfirm = new EmitConfirm(newGame);
     this.matchingRepository.delete(acceptMatchingDto.matchingId);
 
     this.server.to(sockets.user1).emit(GameMatchingEvent.confirm, confirmData);
     this.server.to(sockets.user2).emit(GameMatchingEvent.confirm, confirmData);
 
-    // changeState();
     this.gameConnectGateway.updateInGameStatus(matching.user1Id, matching.user2Id, confirmData);
 
-    // enter to the gameRoom;
     if (newGame) {
       this.gameConnectGateway.enterGameRoom(newGame);
       this.server.to(newGame.gameInfo.roomId.toString()).emit('init', new EmitInit(newGame));

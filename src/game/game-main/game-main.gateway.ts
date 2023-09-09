@@ -110,32 +110,28 @@ export class GameMainGateway {
     game.renderInfo.ball.y += defaultSetting.ballSpeed * game.renderInfo.ball.dy;
   }
 
-  // 공이 천장 내지는 패들에 부딫혔을때 -> 공의 벡터를 바꿈;
   changeBallVector(game: Game) {
     const ball: Ball = game.renderInfo.ball;
     const leftPaddle: Paddle = game.renderInfo.leftPaddle;
     const rightPaddle: Paddle = game.renderInfo.rightPaddle;
 
-    // 천장에 부딪혔을때;
     if (ball.y <= 0 + defaultSetting.ballRad) ball.dy *= -1;
     if (ball.y >= defaultSetting.gameHeight - defaultSetting.ballRad) ball.dy *= -1;
-    // player paddle에 부딪혔을때;
     if (ball.x <= leftPaddle.x + leftPaddle.width + defaultSetting.ballRad) {
       if (ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) {
-        ball.x = leftPaddle.x + leftPaddle.width + defaultSetting.ballRad; // 공이 꼈을때;
+        ball.x = leftPaddle.x + leftPaddle.width + defaultSetting.ballRad;
         ball.dx *= -1;
       }
     }
     if (ball.x >= rightPaddle.x - defaultSetting.ballRad) {
       if (ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height) {
-        ball.x = rightPaddle.x - defaultSetting.ballRad; // 공이 꼈을때;
+        ball.x = rightPaddle.x - defaultSetting.ballRad;
         ball.dx *= -1;
       }
     }
     return;
   }
 
-  // 벽 충돌 판정 -> 스코어 업데이트
   checkWallCollision(game: Game): boolean {
     if (game.renderInfo.ball.x >= defaultSetting.gameWidth) {
       this.updateGameUserScore(game, true);
@@ -177,7 +173,7 @@ export class GameMainGateway {
     const game = this.gameRepository.findBySocket(client.id);
     if (game.connectInfo.gameStatus !== GameStatus.IN_GAME) return;
     const userPaddle = this.findUserPaddle(client, game);
-    if (userPaddle == null) return; // invalid;
+    if (userPaddle == null) return;
     if (userPaddle.y > 0) userPaddle.y -= defaultSetting.paddleSpeed;
   }
 
@@ -186,7 +182,7 @@ export class GameMainGateway {
     const game = this.gameRepository.findBySocket(client.id);
     if (game.connectInfo.gameStatus !== GameStatus.IN_GAME) return;
     const userPaddle = this.findUserPaddle(client, game);
-    if (userPaddle == null) return; // invalid;
+    if (userPaddle == null) return;
     if (userPaddle.y < defaultSetting.gameHeight - userPaddle.height) userPaddle.y += defaultSetting.paddleSpeed;
   }
 }

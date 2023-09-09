@@ -10,10 +10,10 @@ export class QueueRepository {
   private readonly modeQueue: Array<Map<userId, rating>> = [];
 
   constructor() {
-    this.modeQueue.push(new Map<userId, rating>);
-    this.modeQueue.push(new Map<userId, rating>);
-    this.modeQueue.push(new Map<userId, rating>);
-    this.modeQueue.push(new Map<userId, rating>);
+    this.modeQueue.push(new Map<userId, rating>());
+    this.modeQueue.push(new Map<userId, rating>());
+    this.modeQueue.push(new Map<userId, rating>());
+    this.modeQueue.push(new Map<userId, rating>());
   }
 
   find(userId: userId): rating | undefined {
