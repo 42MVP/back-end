@@ -32,21 +32,30 @@ export class GameIntervalService {
   }
 
   matchMaking(): void {
-    const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
-    const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
-    // let user2: Record<number, number> = undefined;
+    const queue: Map<rating, userId>[] = this.queueRepository.findAll();
 
     console.log('queue: ', queue);
 
-    for (const [userId, rating] of queue) {
-      console.log('IN MODE ONE QUEUE: target Rate: ', rating, 'id: ', userId);
-      if (this.isMatchSuitable({ rating, userId }, queue, GameMode.MODE_ONE)) break;
+    let gameMode: GameMode = GameMode.DEFAULT;
+    for (const modeQueue of queue) {
+      for (const [userId, rating] of modeQueue) {
+        console.log('IN MODE [', gameMode, '] QUEUE: target Rate: ', rating, 'id: ', userId);
+        if (this.isMatchSuitable({ rating, userId }, modeQueue, gameMode)) break;
+      }
+      gameMode++;
     }
+    // const queue: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_ONE);
+    // const queue2: Map<rating, userId> = this.queueRepository.findAll(GameMode.MODE_TWO);
+    // // let user2: Record<number, number> = undefined;
 
-    for (const [userId, rating] of queue2) {
-      console.log('IN MODE TWO QUEUE: target Rate: ', rating, 'id: ', userId);
-      if (this.isMatchSuitable({ rating, userId }, queue2, GameMode.MODE_TWO)) break;
-    }
+    // for (const [userId, rating] of queue) {
+    //   if (this.isMatchSuitable({ rating, userId }, queue, GameMode.MODE_ONE)) break;
+    // }
+
+    // for (const [userId, rating] of queue2) {
+    //   console.log('IN MODE TWO QUEUE: target Rate: ', rating, 'id: ', userId);
+    //   if (this.isMatchSuitable({ rating, userId }, queue2, GameMode.MODE_TWO)) break;
+    // }
   }
 
   isMatchSuitable(target: { rating: number; userId: number }, queue: Map<rating, userId>, gameMode: GameMode): boolean {
