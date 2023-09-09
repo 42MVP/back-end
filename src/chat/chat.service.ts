@@ -53,7 +53,7 @@ export class ChatService {
   }
 
   async findUserName(userId: number) {
-    const user: User = (await this.userRepository.findOne({where: {id: userId}}));
+    const user: User = await this.userRepository.findOne({ where: { id: userId } });
     return user.userName;
   }
 
@@ -76,7 +76,9 @@ export class ChatService {
 
   async getChatRoomList(userId: number): Promise<ChatRoomDataDto[]> {
     const targetUser = await this.findExistUser(userId);
-    const userChatProfiles = await this.chatUserRepository.find({ where: { userId: targetUser.id } });
+    const userChatProfiles = await this.chatUserRepository.find({
+      where: { userId: targetUser.id, status: Not(ChatUserStatus.BAN) },
+    });
     const chatRoomList: ChatRoomDataDto[] = await Promise.all(
       userChatProfiles.map(async (userChatProfile: ChatUser) => await this.getChatRoomDto(userChatProfile)),
     );
@@ -115,14 +117,14 @@ export class ChatService {
     // await this.joinChatRoom(createdOwner);
     return createdOwner;
   }
-  
+
   async createDMRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     const inviter: User = await this.findExistUser(userId);
     if (!newRoomInfo.userId) throw new BadRequestException('DM need a target user');
-    const invitee: User= await this.findExistUser(newRoomInfo.userId);
-    
-    const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id }});
-    const blocked: Block = await this.blockRepository.findOne({ where: {  toId: inviter.id, fromId: invitee.id }});
+    const invitee: User = await this.findExistUser(newRoomInfo.userId);
+
+    const blocking: Block = await this.blockRepository.findOne({ where: { toId: invitee.id, fromId: inviter.id } });
+    const blocked: Block = await this.blockRepository.findOne({ where: { toId: inviter.id, fromId: invitee.id } });
     if (blocking) throw new BadRequestException('you blocked DM target user');
     if (blocked) throw new BadRequestException('you have been blocked by DM target user');
     newRoomInfo.roomName = invitee.userName;
@@ -135,7 +137,7 @@ export class ChatService {
     this.joinChatRoom(invitedUser);
     return new ChatRoomDto(newRoom.id, newRoom.roomName, newRoom.roomMode);
   }
-  
+
   async createChatRoom(userId: number, newRoomInfo: newChatRoomDto): Promise<ChatRoomDto> {
     if (newRoomInfo.roomMode === ChatRoomMode.DIRECT) return this.createDMRoom(userId, newRoomInfo);
     await this.findExistUser(userId);
